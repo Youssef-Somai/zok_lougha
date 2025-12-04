@@ -64,7 +64,7 @@ public:
         const QImage &image,
         const QString &expectedCategory,
         QWidget *parentWidget = nullptr
-    );
+        );
 
     /**
      * @brief Sets the Gemini API key

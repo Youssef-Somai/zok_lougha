@@ -48,17 +48,17 @@ QString AIVerifier::buildVerificationPrompt(const QString &expectedCategory)
     QString categoryDesc = getCategoryDescription(expectedCategory);
 
     QString prompt = QString(
-        "Vous êtes un système de vérification d'images pour une application de gestion de matériel de club d'été.\n\n"
-        "Analysez cette image et déterminez si elle correspond à la catégorie: '%1' qui inclut: %2\n\n"
-        "Répondez UNIQUEMENT avec un objet JSON au format suivant (sans texte supplémentaire):\n"
-        "{\n"
-        "  \"matches\": true ou false,\n"
-        "  \"detected_category\": \"la catégorie détectée\",\n"
-        "  \"confidence\": score entre 0 et 1,\n"
-        "  \"explanation\": \"explication détaillée en français\"\n"
-        "}\n\n"
-        "Soyez strict: répondez false si l'image ne correspond clairement pas à la catégorie attendue."
-    ).arg(expectedCategory, categoryDesc);
+                         "Vous êtes un système de vérification d'images pour une application de gestion de matériel de club d'été.\n\n"
+                         "Analysez cette image et déterminez si elle correspond à la catégorie: '%1' qui inclut: %2\n\n"
+                         "Répondez UNIQUEMENT avec un objet JSON au format suivant (sans texte supplémentaire):\n"
+                         "{\n"
+                         "  \"matches\": true ou false,\n"
+                         "  \"detected_category\": \"la catégorie détectée\",\n"
+                         "  \"confidence\": score entre 0 et 1,\n"
+                         "  \"explanation\": \"explication détaillée en français\"\n"
+                         "}\n\n"
+                         "Soyez strict: répondez false si l'image ne correspond clairement pas à la catégorie attendue."
+                         ).arg(expectedCategory, categoryDesc);
 
     return prompt;
 }
@@ -154,20 +154,20 @@ VerificationResult AIVerifier::callGeminiAPI(const QString &imageData, const QSt
         // Specific handling for rate limit (429)
         if (statusCode == 429) {
             result.errorMessage = "RATE LIMIT DÉPASSÉ!\n\n"
-                                 "Vous avez fait trop de requêtes.\n"
-                                 "Limites gratuites:\n"
-                                 "• 15 requêtes par minute\n"
-                                 "• 1,500 requêtes par jour\n\n"
-                                 "Solutions:\n"
-                                 "1. Attendez 1 minute et réessayez\n"
-                                 "2. Attendez demain (00:00 UTC)\n"
-                                 "3. Créez une nouvelle clé API";
+                                  "Vous avez fait trop de requêtes.\n"
+                                  "Limites gratuites:\n"
+                                  "• 15 requêtes par minute\n"
+                                  "• 1,500 requêtes par jour\n\n"
+                                  "Solutions:\n"
+                                  "1. Attendez 1 minute et réessayez\n"
+                                  "2. Attendez demain (00:00 UTC)\n"
+                                  "3. Créez une nouvelle clé API";
             qCritical() << "⚠⚠⚠ RATE LIMIT (429) - Too many requests!";
             qCritical() << "⚠ Wait 1 minute or use a new API key";
         } else {
             result.errorMessage = QString("Erreur réseau (HTTP %1): %2")
-                                 .arg(statusCode)
-                                 .arg(reply->errorString());
+                                      .arg(statusCode)
+                                      .arg(reply->errorString());
         }
 
         reply->deleteLater();
@@ -300,10 +300,10 @@ VerificationResult AIVerifier::performLocalVerification(const QImage &image, con
     result.confidence = 0.5;  // Medium confidence for local verification
     result.category = expectedCategory;
     result.details = QString(
-        "Vérification locale effectuée (service AI non disponible).\n"
-        "Image acceptée avec une confiance moyenne.\n"
-        "Assurez-vous que l'image correspond bien à la catégorie '%1'."
-    ).arg(expectedCategory);
+                         "Vérification locale effectuée (service AI non disponible).\n"
+                         "Image acceptée avec une confiance moyenne.\n"
+                         "Assurez-vous que l'image correspond bien à la catégorie '%1'."
+                         ).arg(expectedCategory);
 
     qDebug() << "Local verification completed with medium confidence";
 
@@ -372,8 +372,8 @@ VerificationResult AIVerifier::verifyImageCategory(
             result.isValid = false;
             result.confidence = 0.0;
             result.errorMessage = "Clé API Gemini non configurée!\n\n"
-                                 "La vérification AI est OBLIGATOIRE.\n"
-                                 "Configurez votre clé Gemini dans config.ini";
+                                  "La vérification AI est OBLIGATOIRE.\n"
+                                  "Configurez votre clé Gemini dans config.ini";
         }
 
     } catch (const std::exception &e) {
@@ -402,17 +402,17 @@ bool AIVerifier::showVerificationDialog(const VerificationResult &result, QWidge
         title = "✓ Vérification Réussie";
 
         message = QString(
-            "<h3>L'image a été vérifiée avec succès!</h3>"
-            "<p><b>Catégorie attendue:</b> %1</p>"
-            "<p><b>Catégorie détectée:</b> %2</p>"
-            "<p><b>Niveau de confiance:</b> %3%</p>"
-            "<p><b>Détails:</b> %4</p>"
-        ).arg(
-            result.expectedCategory,
-            result.category,
-            QString::number(result.confidence * 100, 'f', 1),
-            result.details
-        );
+                      "<h3>L'image a été vérifiée avec succès!</h3>"
+                      "<p><b>Catégorie attendue:</b> %1</p>"
+                      "<p><b>Catégorie détectée:</b> %2</p>"
+                      "<p><b>Niveau de confiance:</b> %3%</p>"
+                      "<p><b>Détails:</b> %4</p>"
+                      ).arg(
+                          result.expectedCategory,
+                          result.category,
+                          QString::number(result.confidence * 100, 'f', 1),
+                          result.details
+                          );
 
         QMessageBox::information(parentWidget, title, message);
         return true;
@@ -423,12 +423,12 @@ bool AIVerifier::showVerificationDialog(const VerificationResult &result, QWidge
         if (!result.errorMessage.isEmpty()) {
             // Technical error occurred
             message = QString(
-                "<h3>Erreur lors de la vérification</h3>"
-                "<p><b>Erreur:</b> %1</p>"
-                "<p>La vérification AI n'a pas pu être complétée.</p>"
-                "<p><b>Voulez-vous continuer quand même?</b></p>"
-                "<p style='color: red;'><i>Attention: L'image n'a pas été vérifiée par l'IA.</i></p>"
-            ).arg(result.errorMessage);
+                          "<h3>Erreur lors de la vérification</h3>"
+                          "<p><b>Erreur:</b> %1</p>"
+                          "<p>La vérification AI n'a pas pu être complétée.</p>"
+                          "<p><b>Voulez-vous continuer quand même?</b></p>"
+                          "<p style='color: red;'><i>Attention: L'image n'a pas été vérifiée par l'IA.</i></p>"
+                          ).arg(result.errorMessage);
 
             QMessageBox msgBox(parentWidget);
             msgBox.setWindowTitle(title);
@@ -442,20 +442,20 @@ bool AIVerifier::showVerificationDialog(const VerificationResult &result, QWidge
         } else {
             // Verification failed - image doesn't match category
             message = QString(
-                "<h3>L'image ne correspond PAS à la catégorie sélectionnée!</h3>"
-                "<p><b>Catégorie attendue:</b> %1</p>"
-                "<p><b>Catégorie détectée:</b> %2</p>"
-                "<p><b>Niveau de confiance:</b> %3%</p>"
-                "<p><b>Explication:</b> %4</p>"
-                "<hr>"
-                "<p style='color: red;'><b>⚠ ATTENTION: Cette image ne peut pas être ajoutée!</b></p>"
-                "<p>Veuillez sélectionner une image qui correspond à la catégorie '%1'.</p>"
-            ).arg(
-                result.expectedCategory,
-                result.category,
-                QString::number(result.confidence * 100, 'f', 1),
-                result.details
-            );
+                          "<h3>L'image ne correspond PAS à la catégorie sélectionnée!</h3>"
+                          "<p><b>Catégorie attendue:</b> %1</p>"
+                          "<p><b>Catégorie détectée:</b> %2</p>"
+                          "<p><b>Niveau de confiance:</b> %3%</p>"
+                          "<p><b>Explication:</b> %4</p>"
+                          "<hr>"
+                          "<p style='color: red;'><b>⚠ ATTENTION: Cette image ne peut pas être ajoutée!</b></p>"
+                          "<p>Veuillez sélectionner une image qui correspond à la catégorie '%1'.</p>"
+                          ).arg(
+                              result.expectedCategory,
+                              result.category,
+                              QString::number(result.confidence * 100, 'f', 1),
+                              result.details
+                              );
 
             QMessageBox msgBox(parentWidget);
             msgBox.setWindowTitle(title);

@@ -55,8 +55,8 @@ void QRScannerDialog::setupUI()
     resultLabel->setAlignment(Qt::AlignCenter);
     resultLabel->setWordWrap(true);
     resultLabel->setStyleSheet("QLabel { padding: 10px; background-color: #F5F5F5; "
-                              "border: 2px solid #4CAF50; border-radius: 5px; "
-                              "font-family: 'Courier New'; font-size: 10pt; }");
+                               "border: 2px solid #4CAF50; border-radius: 5px; "
+                               "font-family: 'Courier New'; font-size: 10pt; }");
     resultLabel->setVisible(false);
     mainLayout->addWidget(resultLabel);
 
@@ -65,31 +65,31 @@ void QRScannerDialog::setupUI()
 
     startButton = new QPushButton("▶ Démarrer Caméra", this);
     startButton->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; "
-                              "padding: 10px 20px; font-size: 11pt; border-radius: 5px; }"
-                              "QPushButton:hover { background-color: #45a049; }");
+                               "padding: 10px 20px; font-size: 11pt; border-radius: 5px; }"
+                               "QPushButton:hover { background-color: #45a049; }");
     connect(startButton, &QPushButton::clicked, this, &QRScannerDialog::startCamera);
     buttonLayout->addWidget(startButton);
 
     stopButton = new QPushButton("■ Arrêter", this);
     stopButton->setEnabled(false);
     stopButton->setStyleSheet("QPushButton { background-color: #f44336; color: white; "
-                             "padding: 10px 20px; font-size: 11pt; border-radius: 5px; }"
-                             "QPushButton:hover { background-color: #da190b; }"
-                             "QPushButton:disabled { background-color: #ccc; }");
+                              "padding: 10px 20px; font-size: 11pt; border-radius: 5px; }"
+                              "QPushButton:hover { background-color: #da190b; }"
+                              "QPushButton:disabled { background-color: #ccc; }");
     connect(stopButton, &QPushButton::clicked, this, &QRScannerDialog::stopCamera);
     buttonLayout->addWidget(stopButton);
 
     manualButton = new QPushButton("⌨ Saisie Manuelle", this);
     manualButton->setStyleSheet("QPushButton { background-color: #2196F3; color: white; "
-                               "padding: 10px 20px; font-size: 11pt; border-radius: 5px; }"
-                               "QPushButton:hover { background-color: #0b7dda; }");
+                                "padding: 10px 20px; font-size: 11pt; border-radius: 5px; }"
+                                "QPushButton:hover { background-color: #0b7dda; }");
     connect(manualButton, &QPushButton::clicked, this, &QRScannerDialog::onManualInput);
     buttonLayout->addWidget(manualButton);
 
     closeButton = new QPushButton("✖ Fermer", this);
     closeButton->setStyleSheet("QPushButton { background-color: #607D8B; color: white; "
-                              "padding: 10px 20px; font-size: 11pt; border-radius: 5px; }"
-                              "QPushButton:hover { background-color: #455A64; }");
+                               "padding: 10px 20px; font-size: 11pt; border-radius: 5px; }"
+                               "QPushButton:hover { background-color: #455A64; }");
     connect(closeButton, &QPushButton::clicked, this, &QDialog::reject);
     buttonLayout->addWidget(closeButton);
 
@@ -115,8 +115,8 @@ void QRScannerDialog::startCamera()
 
     if (cameras.isEmpty()) {
         QMessageBox::warning(this, "Erreur",
-                           "Aucune caméra détectée!\n"
-                           "Veuillez utiliser la saisie manuelle.");
+                             "Aucune caméra détectée!\n"
+                             "Veuillez utiliser la saisie manuelle.");
         return;
     }
 
@@ -144,8 +144,8 @@ void QRScannerDialog::startCamera()
     if (camera->isActive()) {
         statusLabel->setText("✓ Caméra active - Détection automatique activée!");
         statusLabel->setStyleSheet("QLabel { padding: 10px; background-color: #C8E6C9; "
-                                  "border: 2px solid #4CAF50; border-radius: 5px; "
-                                  "font-size: 11pt; }");
+                                   "border: 2px solid #4CAF50; border-radius: 5px; "
+                                   "font-size: 11pt; }");
         startButton->setEnabled(false);
         stopButton->setEnabled(true);
         isScanning = true;
@@ -153,7 +153,7 @@ void QRScannerDialog::startCamera()
         qDebug() << "✓ Camera started with automatic QR detection!";
     } else {
         QMessageBox::critical(this, "Erreur",
-                            "Impossible de démarrer la caméra!");
+                              "Impossible de démarrer la caméra!");
     }
 }
 
@@ -167,8 +167,8 @@ void QRScannerDialog::stopCamera()
 
     statusLabel->setText("Caméra arrêtée");
     statusLabel->setStyleSheet("QLabel { padding: 10px; background-color: #E3F2FD; "
-                              "border: 2px solid #2196F3; border-radius: 5px; "
-                              "font-size: 11pt; }");
+                               "border: 2px solid #2196F3; border-radius: 5px; "
+                               "font-size: 11pt; }");
     startButton->setEnabled(true);
     stopButton->setEnabled(false);
     isScanning = false;
@@ -201,8 +201,8 @@ void QRScannerDialog::processFrame(const QVideoFrame &frame)
         // Update status
         statusLabel->setText("✓ QR Code détecté!");
         statusLabel->setStyleSheet("QLabel { padding: 10px; background-color: #C8E6C9; "
-                                  "border: 2px solid #4CAF50; border-radius: 5px; "
-                                  "font-size: 11pt; font-weight: bold; }");
+                                   "border: 2px solid #4CAF50; border-radius: 5px; "
+                                   "font-size: 11pt; font-weight: bold; }");
 
         // Show result
         resultLabel->setText(QString("✓ Données détectées: %1").arg(decoded.left(50)));
@@ -231,9 +231,9 @@ void QRScannerDialog::onManualInput()
 {
     bool ok;
     int id = QInputDialog::getInt(this,
-                                   "Saisie Manuelle",
-                                   "Entrez l'ID du matériel:",
-                                   1, 1, 999999, 1, &ok);
+                                  "Saisie Manuelle",
+                                  "Entrez l'ID du matériel:",
+                                  1, 1, 999999, 1, &ok);
 
     if (ok) {
         scannedData = QString::number(id);
@@ -241,9 +241,9 @@ void QRScannerDialog::onManualInput()
         resultLabel->setVisible(true);
 
         QMessageBox::information(this, "ID Saisi",
-                                QString("ID du matériel: %1\n\n"
-                                       "Cliquez sur 'Fermer' pour rechercher ce matériel.")
-                                    .arg(id));
+                                 QString("ID du matériel: %1\n\n"
+                                         "Cliquez sur 'Fermer' pour rechercher ce matériel.")
+                                     .arg(id));
         accept(); // Close dialog with success
     }
 }

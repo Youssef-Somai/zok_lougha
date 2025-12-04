@@ -16,7 +16,7 @@ public:
 
     // Save QR code to file
     static bool saveQrCodeToFile(const QString& text, const QString& filePath,
-                                  int size = 400, int border = 4);
+                                 int size = 400, int border = 4);
 };
 
 #endif // QRCODEHELPER_H
