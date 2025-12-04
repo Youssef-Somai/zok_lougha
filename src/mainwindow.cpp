@@ -296,6 +296,9 @@ void MainWindow::refreshMaterielTable()
               "FROM MATERIEL ORDER BY ID_MATERIEL");
     q.exec();
     loadQueryIntoTable(q);
+
+    // Rafraîchir les indicateurs statistiques affichés dans l'interface
+    updateStatistics();
 }
 
 /* =========================
@@ -1089,26 +1092,27 @@ void MainWindow::updateStatistics()
     int lowStock = 0;
     if (query.next()) lowStock = query.value(0).toInt();
 
-    // TODO: Add these labels to the UI in Qt Designer, then uncomment
-    // Update labels if they exist
-    // if (ui->label_total_items)
-    //     ui->label_total_items->setText(QString::number(total));
-    //
-    // if (ui->label_available_items)
-    //     ui->label_available_items->setText(QString::number(available));
-    //
-    // if (ui->label_repair_items)
-    //     ui->label_repair_items->setText(QString::number(inRepair));
-    //
-    // if (ui->label_low_stock)
-    // {
-    //     ui->label_low_stock->setText(QString::number(lowStock));
-    //     // Color code: red if there are low stock items
-    //     if (lowStock > 0)
-    //         ui->label_low_stock->setStyleSheet("QLabel { color: red; font-weight: bold; font-size: 16pt; }");
-    //     else
-    //         ui->label_low_stock->setStyleSheet("QLabel { color: green; font-size: 16pt; }");
-    // }
+    // Mettre à jour les étiquettes de synthèse si elles existent
+    if (ui->label_total_items)
+        ui->label_total_items->setText(QString("Total: %1").arg(total));
+
+    if (ui->label_available_items)
+        ui->label_available_items->setText(QString("Disponibles: %1").arg(available));
+
+    if (ui->label_repair_items)
+        ui->label_repair_items->setText(QString("En réparation: %1").arg(inRepair));
+
+    if (ui->label_low_stock)
+    {
+        ui->label_low_stock->setText(QString("Stock faible: %1").arg(lowStock));
+
+        // Color code: red if there are low stock items
+        const QString lowStockStyle =
+            (lowStock > 0)
+                ? "QLabel { color: red; font-weight: bold; }"
+                : "QLabel { color: green; font-weight: bold; }";
+        ui->label_low_stock->setStyleSheet(lowStockStyle);
+    }
 
     qDebug() << "Statistics updated: Total=" << total
              << "Available=" << available

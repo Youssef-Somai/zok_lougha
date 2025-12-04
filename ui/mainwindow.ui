@@ -3368,7 +3368,7 @@ font-weight: bold;</string>
           <x>260</x>
           <y>0</y>
           <width>380</width>
-          <height>561</height>
+          <height>660</height>
          </rect>
         </property>
         <property name="styleSheet">
@@ -3500,6 +3500,86 @@ QPushButton:pressed {
          <property name="text">
           <string>🗑️ Effacer Image</string>
          </property>
+        </widget>
+        <widget class="QGroupBox" name="groupBox_stats_summary">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>540</y>
+           <width>340</width>
+           <height>100</height>
+          </rect>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QGroupBox {
+    background-color: rgb(255, 255, 255);
+    border: 1px solid rgb(200, 200, 200);
+    border-radius: 6px;
+    font: 10pt "Times New Roman";
+    font-weight: bold;
+    color: rgb(31, 69, 116);
+    padding: 6px;
+}
+QLabel {
+    font: 10pt "Times New Roman";
+    color: rgb(52, 73, 94);
+}</string>
+         </property>
+         <property name="title">
+          <string>Résumé des stocks</string>
+         </property>
+         <widget class="QLabel" name="label_total_items">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>25</y>
+            <width>150</width>
+            <height>18</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Total: 0</string>
+          </property>
+         </widget>
+         <widget class="QLabel" name="label_available_items">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>55</y>
+            <width>150</width>
+            <height>18</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Disponibles: 0</string>
+          </property>
+         </widget>
+         <widget class="QLabel" name="label_repair_items">
+          <property name="geometry">
+           <rect>
+            <x>180</x>
+            <y>25</y>
+            <width>150</width>
+            <height>18</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>En réparation: 0</string>
+          </property>
+         </widget>
+         <widget class="QLabel" name="label_low_stock">
+          <property name="geometry">
+           <rect>
+            <x>180</x>
+            <y>55</y>
+            <width>150</width>
+            <height>18</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Stock faible: 0</string>
+          </property>
+         </widget>
         </widget>
        </widget>
        <widget class="QGroupBox" name="gestion_a_2">
