@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/image">
+        <file>images/logor.png</file>
+        <file>images/logor.jpg</file>
+    </qresource>
+    <qresource prefix="/style">
+        <file>style.qss</file>
+    </qresource>
+</RCC>

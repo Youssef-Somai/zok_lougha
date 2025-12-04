@@ -80,3 +80,6 @@ CMakeLists.txt.user*
 .rcc/
 .uic/
 /build*/
+
+# API Configuration (contains secrets)
+config.ini

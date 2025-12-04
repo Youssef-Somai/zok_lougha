@@ -31,7 +31,7 @@
 font: 9pt &quot;Times New Roman&quot;;</string>
     </property>
     <property name="currentIndex">
-     <number>6</number>
+     <number>3</number>
     </property>
     <widget class="QWidget" name="login">
      <widget class="QLabel" name="label">
