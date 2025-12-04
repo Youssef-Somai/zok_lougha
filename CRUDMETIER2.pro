@@ -13,7 +13,6 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     materiel.cpp \
-    qrcodegen.cpp \
     qrcodegen_real.cpp \
     qrcodehelper.cpp \
     qrdecoder.cpp \
@@ -29,7 +28,6 @@ HEADERS += \
     local.h \
     mainwindow.h \
     materiel.h \
-    qrcodegen.h \
     qrcodegen_real.h \
     qrcodehelper.h \
     qrdecoder.h \

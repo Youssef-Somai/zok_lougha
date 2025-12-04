@@ -177,6 +177,8 @@ void MainWindow::on_B_A_retour_clicked() {ui->stackedWidget->setCurrentIndex(2);
 void MainWindow::on_pushButton_4_clicked() { ui->stackedWidget->setCurrentIndex(5); }
 void MainWindow::on_pushButton_5_clicked() { ui->stackedWidget->setCurrentIndex(6); }
 void MainWindow::on_pushButton_6_clicked() { ui->stackedWidget->setCurrentIndex(7); }
+void MainWindow::on_pushButton_22_clicked() { ui->stackedWidget->setCurrentIndex(8); }  // Materiel page
+void MainWindow::on_pb_retour_mat_clicked() { ui->stackedWidget->setCurrentIndex(2); }  // Return to main menu
 
 
 
