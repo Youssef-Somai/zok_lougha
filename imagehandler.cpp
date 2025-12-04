@@ -24,7 +24,7 @@ QImage ImageHandler::uploadImageFromFile()
         "Sélectionner une image du matériel",
         QDir::homePath(),
         "Images (*.png *.jpg *.jpeg *.bmp *.gif);;Tous les fichiers (*.*)"
-    );
+        );
 
     if (fileName.isEmpty()) {
         qDebug() << "Image selection cancelled by user";
@@ -38,7 +38,7 @@ QImage ImageHandler::uploadImageFromFile()
 
     if (image.isNull()) {
         QMessageBox::critical(nullptr, "Erreur",
-            "Impossible de charger l'image sélectionnée.\nVeuillez vérifier le format du fichier.");
+                              "Impossible de charger l'image sélectionnée.\nVeuillez vérifier le format du fichier.");
         qWarning() << "Failed to load image from" << fileName;
         return QImage();
     }
@@ -49,7 +49,7 @@ QImage ImageHandler::uploadImageFromFile()
     // Validate image
     if (!validateImage(image)) {
         QMessageBox::warning(nullptr, "Image trop volumineuse",
-            "L'image sélectionnée est trop grande. Veuillez choisir une image plus petite (max 10 MB).");
+                             "L'image sélectionnée est trop grande. Veuillez choisir une image plus petite (max 10 MB).");
         return QImage();
     }
 
@@ -163,8 +163,8 @@ QImage ImageHandler::resizeImage(const QImage &image, int maxWidth, int maxHeigh
     qDebug() << "Resizing image from" << image.size() << "to max" << maxWidth << "x" << maxHeight;
 
     return image.scaled(maxWidth, maxHeight,
-                       Qt::KeepAspectRatio,
-                       Qt::SmoothTransformation);
+                        Qt::KeepAspectRatio,
+                        Qt::SmoothTransformation);
 }
 
 // CameraCaptureDialog Implementation
@@ -256,8 +256,8 @@ void CameraCaptureDialog::initializeCamera()
 
     if (cameras.isEmpty()) {
         QMessageBox::critical(this, "Erreur",
-            "Aucune caméra détectée sur cet ordinateur.\n"
-            "Veuillez connecter une caméra ou utiliser l'option d'upload d'image.");
+                              "Aucune caméra détectée sur cet ordinateur.\n"
+                              "Veuillez connecter une caméra ou utiliser l'option d'upload d'image.");
         qWarning() << "No cameras available";
         reject();
         return;
@@ -350,5 +350,5 @@ void CameraCaptureDialog::onCameraError()
     qWarning() << "Camera error:" << errorMsg;
 
     QMessageBox::critical(this, "Erreur caméra",
-        QString("Erreur lors de l'utilisation de la caméra:\n%1").arg(errorMsg));
+                          QString("Erreur lors de l'utilisation de la caméra:\n%1").arg(errorMsg));
 }

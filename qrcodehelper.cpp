@@ -66,7 +66,7 @@ QPixmap QrCodeHelper::generateQrCodePixmap(const QString& text, int size, int bo
 }
 
 bool QrCodeHelper::saveQrCodeToFile(const QString& text, const QString& filePath,
-                                     int size, int border)
+                                    int size, int border)
 {
     QImage qrImage = generateQrCode(text, size, border);
     bool saved = qrImage.save(filePath);

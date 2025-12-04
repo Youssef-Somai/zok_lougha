@@ -1,35 +1,48 @@
-QT += core gui sql widgets charts network printsupport multimedia
+QT += core gui sql
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT += charts
+QT += core gui sql widgets charts network
+QT += core gui sql widgets charts printsupport
+CONFIG += c++11
+
+
+
+
 
 CONFIG += c++17
 
-INCLUDEPATH += header
-DEPENDPATH += header
-
 SOURCES += \
-    source/aiverifier.cpp \
-    source/connection.cpp \
-    source/imagehandler.cpp \
-    source/main.cpp \
-    source/mainwindow.cpp \
-    source/materiel.cpp \
-    source/qrcodegen.cpp \
-    source/qrcodegen_real.cpp \
-    source/qrcodehelper.cpp \
-    source/qrdecoder.cpp \
-    source/qrscannerdialog.cpp
+    activite.cpp \
+    adherent.cpp \
+    aiverifier.cpp \
+    connexion.cpp \
+    imagehandler.cpp \
+    local.cpp \
+    main.cpp \
+    mainwindow.cpp \
+    materiel.cpp \
+    qrcodegen.cpp \
+    qrcodegen_real.cpp \
+    qrcodehelper.cpp \
+    qrdecoder.cpp \
+    qrscannerdialog.cpp \
+    smtp.cpp
 
 HEADERS += \
-    header/aiverifier.h \
-    header/connection.h \
-    header/imagehandler.h \
-    header/mainwindow.h \
-    header/materiel.h \
-    header/qrcodegen.h \
-    header/qrcodegen_real.hpp \
-    header/qrcodehelper.h \
-    header/qrdecoder.h \
-    header/qrscannerdialog.h
+    activite.h \
+    adherent.h \
+    aiverifier.h \
+    connexion.h \
+    imagehandler.h \
+    local.h \
+    mainwindow.h \
+    materiel.h \
+    qrcodegen.h \
+    qrcodegen_real.h \
+    qrcodehelper.h \
+    qrdecoder.h \
+    qrscannerdialog.h \
+    smtp.h
 
 FORMS += \
     mainwindow.ui
