@@ -1,5 +1,5 @@
 #include "qrcodehelper.h"
-#include "qrcodegen_real.hpp"
+#include "qrcodegen_real.h"
 #include <QPainter>
 #include <QDebug>
 #include <vector>
