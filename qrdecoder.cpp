@@ -22,9 +22,14 @@ QString QRDecoder::decode(const QImage &image)
 
     // STUB IMPLEMENTATION: quirc library not available
     // This is a placeholder until the quirc library is added to the project
-    qWarning() << "⚠ QR Code decoding is disabled: quirc library not available";
-    qWarning() << "   To enable QR scanning, add the quirc library to your project";
-    qWarning() << "   Download from: https://github.com/dlbeer/quirc";
+    // Only warn once to avoid console spam
+    static bool warnedOnce = false;
+    if (!warnedOnce) {
+        qWarning() << "⚠ QR Code decoding is disabled: quirc library not available";
+        qWarning() << "   To enable QR scanning, add the quirc library to your project";
+        qWarning() << "   Download from: https://github.com/dlbeer/quirc";
+        warnedOnce = true;
+    }
 
     return QString(); // Return empty string until quirc is added
 
