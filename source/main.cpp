@@ -2,10 +2,12 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QProcessEnvironment>
+#include <QFileInfo>
 #include <QSettings>
 #include <QFile>
 #include <QDir>
 #include <QCoreApplication>
+#include <QDebug>
 #include "connection.h"
 #include "aiverifier.h"
 

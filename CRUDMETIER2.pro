@@ -1,32 +1,35 @@
-QT += core gui sql
+QT += core gui sql widgets charts network printsupport
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-QT += charts
-QT += core gui sql widgets charts network
-QT += core gui sql widgets charts printsupport
-CONFIG += c++11
-
-
-
-
 
 CONFIG += c++17
 
+INCLUDEPATH += header
+DEPENDPATH += header
+
 SOURCES += \
-    activite.cpp \
-    adherent.cpp \
-    connexion.cpp \
-    local.cpp \
-    main.cpp \
-    mainwindow.cpp \
-    smtp.cpp
+    source/aiverifier.cpp \
+    source/connection.cpp \
+    source/imagehandler.cpp \
+    source/main.cpp \
+    source/mainwindow.cpp \
+    source/materiel.cpp \
+    source/qrcodegen.cpp \
+    source/qrcodegen_real.cpp \
+    source/qrcodehelper.cpp \
+    source/qrdecoder.cpp \
+    source/qrscannerdialog.cpp
 
 HEADERS += \
-    activite.h \
-    adherent.h \
-    connexion.h \
-    local.h \
-    mainwindow.h \
-    smtp.h
+    header/aiverifier.h \
+    header/connection.h \
+    header/imagehandler.h \
+    header/mainwindow.h \
+    header/materiel.h \
+    header/qrcodegen.h \
+    header/qrcodegen_real.hpp \
+    header/qrcodehelper.h \
+    header/qrdecoder.h \
+    header/qrscannerdialog.h
 
 FORMS += \
     mainwindow.ui
