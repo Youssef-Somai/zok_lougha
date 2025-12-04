@@ -8,6 +8,7 @@
 #include <climits>
 #include <cstddef>
 #include <cstring>
+#include <QtGlobal>
 
 namespace qrcodegen {
 
@@ -140,6 +141,7 @@ void QrCode::drawAlignmentPattern(int x, int y) {
 }
 
 void QrCode::drawFormatBits(int mask) {
+    Q_UNUSED(mask);
     // Simplified
 }
 
@@ -148,14 +150,17 @@ void QrCode::drawVersion() {
 }
 
 void QrCode::drawCodewords(const std::vector<std::uint8_t> &data) {
+    Q_UNUSED(data);
     // Simplified
 }
 
 void QrCode::appendErrorCorrection(std::vector<std::uint8_t> &data) {
+    Q_UNUSED(data);
     // Simplified
 }
 
 void QrCode::applyMask(int mask) {
+    Q_UNUSED(mask);
     // Simplified
 }
 
