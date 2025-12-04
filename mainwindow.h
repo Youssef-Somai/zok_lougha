@@ -5,14 +5,17 @@
 #include <QtSql>
 #include <QCalendarWidget>
 #include <QTextCharFormat>
+#include <QListWidget>
+#include <QListWidgetItem>
+#include <QInputDialog>
+#include <QImage>
+#include <QtCharts/QChartView>
+
 #include "activite.h"
 #include "connexion.h"
 #include "adherent.h"
-#include <QListWidget>
-#include <QListWidgetItem>
 #include "local.h"
-#include <QMainWindow>
-#include <QInputDialog>
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -39,8 +42,10 @@ private slots:
     void on_pushButton_4_clicked();
     void on_pushButton_5_clicked();
     void on_pushButton_6_clicked();
+    void on_pushButton_22_clicked();
+    void on_pb_retour_mat_clicked();
 
-    // CRUD
+    // CRUD activités
     void on_bajouterA_clicked();
     void on_bannulerA_clicked();
     void on_b_A_supprimer_clicked();
@@ -53,18 +58,14 @@ private slots:
     // calendrier
     void afficherCalendrier();
     void afficherActivitesDuJour(const QDate &date);
-
     void afficherToutesActivitesDansTabA2();
     void on_B_A_retour_2_clicked();
 
-    // tri
+    // tri activités
     void on_Btrier_clicked();
-
 
     //chercher
     void on_Bchercher_clicked();
-
-
 
     void afficher_stat_act();
 
@@ -73,11 +74,11 @@ private slots:
     void on_Bexporter_clicked();
     void on_afficher_regroupement_clicked();
 
-
     void on_B_retour_stat_act_2_clicked();
     void chargerSuggestionCoach();
     void highlighterJoursActivites();
 
+    // Adhérents
     void on_valider_a_clicked();
     void on_annuler_a_clicked();
     void on_supprimer_a_clicked();
@@ -96,7 +97,8 @@ private slots:
     void on_B_A_retour_6_clicked();
 
     void on_B_A_retour_5_clicked();
-    //local
+
+    // local
     void on_AjouterLoc_clicked();
     bool controlSaisie();
 
@@ -114,7 +116,6 @@ private slots:
     void on_archiveItem_selected(QListWidgetItem *item);
     void on_btnArchiveViewer_clicked();
 
-
     void onEtatChanged(const QString &newEtat);
 
     void on_ASC_clicked();
@@ -123,10 +124,41 @@ private slots:
 
     void on_bt_retour_accueil_clicked();
 
+    // Materiel CRUD
+    void on_pb_ajouter_materiel_clicked();
+    void on_pb_modifier_materiel_clicked();
+    void on_pb_supprimer_materiel_clicked();
+    void on_pb_rechercher_materiel_clicked();
+    void on_pb_afficher_materiel_clicked();
+    void on_tableWidgetMateriel_cellClicked(int row, int column);
+    void on_pb_annuler_materiel_clicked();
+    void on_tableWidgetMateriel_horizontalHeaderClicked(int column);
+    void on_pb_sort_clicked();
+
+    // Materiel image handling
+    void on_pb_upload_image_materiel_clicked();
+    void on_pb_camera_materiel_clicked();
+    void on_pb_clear_image_materiel_clicked();
+
+    // Materiel QR code
+    void on_pb_generer_qrcode_clicked();
+    void on_pb_generer_qrcode_visible_clicked();
+    void on_pb_sauvegarder_qrcode_clicked();
+    void on_pb_scanner_qrcode_clicked();
+
+    // Materiel statistics / PDF
+    void on_pb_show_statistics_clicked();
+    void on_pb_export_pdf_clicked();
+
 private:
     Ui::MainWindow *ui;
     Connexion *connexion;
     QSqlDatabase db;
+    bool hasImageData;
+    QtCharts::QChartView *statisticsChartView;
+    int currentSortColumn;
+    Qt::SortOrder currentSortOrder;
+
     void chargerActivites();
     Activite getActiviteFromInputs();
     void clearAjouterAInputs();
@@ -137,7 +169,7 @@ private:
     Adherent getAdherentFromInputs();
     void clearAdherentInputs();
     void chargerTableAdherents();
-    local loc;
+    local *loc;
 
     void afficherStatistiques();
 
@@ -149,5 +181,27 @@ private:
     QMap<int, QString> readLastStatesFromFile();
     void checkStatesOnStartup();
 
+    // Materiel helpers
+    void initMaterielTable();
+    void initMaterielCombos();
+    void setupValidators();
+    bool validerChampNumerique(const QString& valeur, const QString& nomChamp, int& resultat, bool autoriserZero = false);
+    bool validerChampDecimal(const QString& valeur, const QString& nomChamp, double& resultat);
+    bool validerChampTexte(const QString& valeur, const QString& nomChamp, bool obligatoire = true);
+    void clearMaterielForm();
+    void loadQueryIntoTable(QSqlQuery &q);
+    void refreshMaterielTable();
+    void populateMaterielFormFromRow(int row);
+    void createImageUIElements();
+    void displayImagePreview(const QImage &image);
+    void clearImagePreview();
+    bool verifyImageWithAI(const QString &category);
+    void sortTableByColumn(int column, Qt::SortOrder order);
+    void generatePdfReport(const QString &fileName);
+    void updateStatistics();
+    void createStatisticsChart();
+
+    // Materiel data
+    QImage currentMaterielImage;
 };
 #endif // MAINWINDOW_H

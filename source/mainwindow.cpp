@@ -16,6 +16,9 @@
 #include <QtCharts/QPieSlice>
 #include <QtCharts/QChartView>
 #include <QtCharts/QLegend>
+#include <QtCharts/QBarSeries>
+#include <QtCharts/QBarSet>
+#include <QtCharts/QBarCategoryAxis>
 #include <QPrinter>
 #include <QPainter>
 #include <QFont>
@@ -50,6 +53,8 @@
 #include "adherent.h"
 #include "local.h"
 #include "smtp.h"
+
+QT_CHARTS_USE_NAMESPACE
 
 /* =========================
  *  CONSTRUCTEUR / DTOR
