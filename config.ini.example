@@ -1,0 +1,43 @@
+# ========================================================================
+# Configuration de l'API AI pour la vérification d'images
+# ========================================================================
+#
+# INSTRUCTIONS:
+# 1. Copiez ce fichier et renommez-le en "config.ini"
+# 2. Remplacez "VOTRE_CLE_API_ICI" par votre vraie clé API
+# 3. Sauvegardez le fichier
+# 4. Lancez l'application
+#
+# ========================================================================
+
+[AI]
+# Activez ou désactivez la vérification AI
+enabled=true
+
+# Votre clé API (REQUIS)
+# Pour Gemini (GRATUIT): Obtenez votre clé sur https://aistudio.google.com/app/apikey
+# Pour OpenAI (Payant): Obtenez votre clé sur https://platform.openai.com/api-keys
+api_key=VOTRE_CLE_API_ICI
+
+# Provider à utiliser (Gemini ou OpenAI)
+# Gemini = GRATUIT avec 1500 requêtes par jour
+# OpenAI = Payant mais très précis
+provider=Gemini
+
+# ========================================================================
+# EXEMPLE avec Gemini (RECOMMANDÉ - GRATUIT):
+# ========================================================================
+# [AI]
+# enabled=true
+# api_key=AIzaSyDx9vK2tP8qL5mN7rB3wC4vF6gH8jK9lM0
+# provider=Gemini
+#
+# ========================================================================
+# EXEMPLE avec OpenAI:
+# ========================================================================
+# [AI]
+# enabled=true
+# api_key=sk-proj-abc123xyz789...
+# provider=OpenAI
+#
+# ========================================================================
