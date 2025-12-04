@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/image">
-        <file>image/logor.png</file>
-    </qresource>
-</RCC>
