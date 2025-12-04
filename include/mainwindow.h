@@ -11,6 +11,7 @@
 #include <QtCharts/QPieSlice>
 #include "imagehandler.h"
 #include "aiverifier.h"
+#include "local.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -39,6 +40,17 @@ private slots:
     void on_pushButton_5_clicked();
     void on_pushButton_6_clicked();
     void on_pb_retour_mat_clicked();
+
+    // === CRUD LOCAL ===
+    void on_pushButton_29_clicked(); // Ajouter
+    void on_pushButton_30_clicked(); // Supprimer (form)
+    void on_pushButton_31_clicked(); // Chercher
+    void on_pushButton_32_clicked(); // Trier
+    void on_pushButton_33_clicked(); // Exporter
+    void on_pushButton_34_clicked(); // Modifier
+    void on_pushButton_35_clicked(); // Supprimer (selection)
+    void on_pushButton_36_clicked(); // Statistiques
+    void on_tableWidget_4_cellClicked(int row, int column);
 
     void on_tableWidgetMateriel_cellClicked(int row, int column);
 
@@ -123,6 +135,12 @@ private:
     int currentSortColumn;          // Current sort column
     Qt::SortOrder currentSortOrder; // Current sort order
     void sortTableByColumn(int column, Qt::SortOrder order);
+
+    // ===== Local helpers =====
+    void initLocalUi();                 // configure combo and headers
+    void refreshLocalTable();           // reload tableWidget_4 from DB
+    void clearLocalForm();              // clear local entry fields
+    void populateLocalFormFromRow(int); // fill form from selection
 
 
 };

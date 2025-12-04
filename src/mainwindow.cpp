@@ -28,9 +28,14 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QDialogButtonBox>
+#include <QMap>
+#include <QFile>
+#include <QTextStream>
+#include <memory>
 #include "materiel.h"
 #include "qrcodehelper.h"
 #include "qrscannerdialog.h"
+#include "local.h"
 
 /* =========================
  *  CONSTRUCTEUR / DTOR
@@ -60,6 +65,10 @@ MainWindow::MainWindow(QWidget *parent)
     initMaterielCombos();
     setupValidators(); // Configuration des validateurs
     refreshMaterielTable();
+
+    // ======= LOCAL =======
+    initLocalUi();
+    refreshLocalTable();
 
     if (ui->tableWidgetMateriel && ui->tableWidgetMateriel->horizontalHeader())
     {
@@ -1335,6 +1344,335 @@ void MainWindow::sortTableByColumn(int column, Qt::SortOrder order)
 
     // Re-enable sorting
     ui->tableWidgetMateriel->setSortingEnabled(true);
+}
+
+/* =========================
+ *  LOCAL - UTILITAIRES
+ * ========================= */
+void MainWindow::initLocalUi()
+{
+    if (ui->tableWidget_4)
+    {
+        ui->tableWidget_4->setColumnCount(4);
+        ui->tableWidget_4->setHorizontalHeaderLabels(
+            {"Nom", "Id", "Etat de local", "Type du local"});
+        ui->tableWidget_4->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    }
+
+    if (ui->comboBox_15)
+    {
+        ui->comboBox_15->clear();
+        ui->comboBox_15->addItems({"Id", "Nom", "Etat", "Type"});
+    }
+}
+
+void MainWindow::clearLocalForm()
+{
+    if (ui->lineEdit_27) ui->lineEdit_27->clear();
+    if (ui->lineEdit_28) ui->lineEdit_28->clear();
+    if (ui->comboBox_13) ui->comboBox_13->setCurrentIndex(0);
+    if (ui->comboBox_14) ui->comboBox_14->setCurrentIndex(0);
+}
+
+void MainWindow::populateLocalFormFromRow(int row)
+{
+    if (!ui->tableWidget_4 || row < 0 || row >= ui->tableWidget_4->rowCount())
+        return;
+
+    if (ui->lineEdit_27)
+        ui->lineEdit_27->setText(ui->tableWidget_4->item(row, 0)->text());
+    if (ui->lineEdit_28)
+        ui->lineEdit_28->setText(ui->tableWidget_4->item(row, 1)->text());
+    if (ui->comboBox_13)
+        ui->comboBox_13->setCurrentText(ui->tableWidget_4->item(row, 2)->text());
+    if (ui->comboBox_14)
+        ui->comboBox_14->setCurrentText(ui->tableWidget_4->item(row, 3)->text());
+}
+
+void MainWindow::refreshLocalTable()
+{
+    if (!ui->tableWidget_4) return;
+
+    local l;
+    std::unique_ptr<QSqlQueryModel> model(l.GETALL());
+    if (!model)
+    {
+        QMessageBox::warning(this, "Locaux", "Impossible de charger les locaux.");
+        return;
+    }
+
+    ui->tableWidget_4->setRowCount(model->rowCount());
+    ui->tableWidget_4->setColumnCount(model->columnCount());
+    ui->tableWidget_4->setHorizontalHeaderLabels(
+        {"Nom", "Id", "Etat de local", "Type du local"});
+
+    for (int r = 0; r < model->rowCount(); ++r)
+    {
+        for (int c = 0; c < model->columnCount(); ++c)
+        {
+            const QString text = model->data(model->index(r, c)).toString();
+            ui->tableWidget_4->setItem(r, c, new QTableWidgetItem(text));
+        }
+    }
+
+    ui->tableWidget_4->resizeColumnsToContents();
+}
+
+/* =========================
+ *  LOCAL - SLOTS CRUD
+ * ========================= */
+void MainWindow::on_pushButton_29_clicked()
+{
+    if (!ui->lineEdit_27 || !ui->lineEdit_28)
+        return;
+
+    const QString nom = ui->lineEdit_27->text().trimmed();
+    const QString idText = ui->lineEdit_28->text().trimmed();
+
+    if (nom.isEmpty() || idText.isEmpty())
+    {
+        QMessageBox::warning(this, "Locaux", "Veuillez saisir un nom et un identifiant.");
+        return;
+    }
+
+    bool ok = false;
+    int id = idText.toInt(&ok);
+    if (!ok)
+    {
+        QMessageBox::warning(this, "Locaux", "L'identifiant doit être numérique.");
+        return;
+    }
+
+    local l(id, nom, ui->comboBox_14 ? ui->comboBox_14->currentText() : QString(),
+            ui->comboBox_13 ? ui->comboBox_13->currentText() : QString());
+
+    if (l.localExists(id))
+    {
+        QMessageBox::warning(this, "Locaux", "Un local avec cet ID existe déjà.");
+        return;
+    }
+
+    if (l.ADD())
+    {
+        refreshLocalTable();
+        clearLocalForm();
+        QMessageBox::information(this, "Locaux", "Local ajouté avec succès.");
+    }
+    else
+    {
+        QMessageBox::critical(this, "Locaux", "Échec de l'ajout du local.");
+    }
+}
+
+void MainWindow::on_pushButton_30_clicked()
+{
+    if (!ui->lineEdit_28)
+        return;
+
+    bool ok = false;
+    int id = ui->lineEdit_28->text().toInt(&ok);
+    if (!ok)
+    {
+        QMessageBox::warning(this, "Locaux", "Veuillez fournir un ID valide à supprimer.");
+        return;
+    }
+
+    local l;
+    if (l.DELETEE(id))
+    {
+        refreshLocalTable();
+        clearLocalForm();
+        QMessageBox::information(this, "Locaux", "Local supprimé.");
+    }
+    else
+    {
+        QMessageBox::critical(this, "Locaux", "Suppression impossible (ID introuvable?).");
+    }
+}
+
+void MainWindow::on_pushButton_31_clicked()
+{
+    if (!ui->lineEdit_31 || !ui->tableWidget_4)
+        return;
+
+    const QString search = ui->lineEdit_31->text().trimmed();
+    if (search.isEmpty())
+    {
+        refreshLocalTable();
+        return;
+    }
+
+    bool ok = false;
+    int id = search.toInt(&ok);
+    if (!ok)
+    {
+        QMessageBox::warning(this, "Locaux", "La recherche se fait par ID numérique.");
+        return;
+    }
+
+    local l;
+    std::unique_ptr<QSqlQueryModel> model(l.searchById(id));
+    if (!model || model->rowCount() == 0)
+    {
+        QMessageBox::information(this, "Locaux", "Aucun local trouvé.");
+        return;
+    }
+
+    ui->tableWidget_4->setRowCount(model->rowCount());
+    ui->tableWidget_4->setColumnCount(model->columnCount());
+    ui->tableWidget_4->setHorizontalHeaderLabels(
+        {"Nom", "Id", "Etat de local", "Type du local"});
+
+    for (int r = 0; r < model->rowCount(); ++r)
+    {
+        for (int c = 0; c < model->columnCount(); ++c)
+        {
+            const QString text = model->data(model->index(r, c)).toString();
+            ui->tableWidget_4->setItem(r, c, new QTableWidgetItem(text));
+        }
+    }
+    ui->tableWidget_4->resizeColumnsToContents();
+}
+
+void MainWindow::on_pushButton_32_clicked()
+{
+    if (!ui->tableWidget_4 || !ui->comboBox_15)
+        return;
+
+    int column = ui->comboBox_15->currentIndex();
+    ui->tableWidget_4->sortItems(column);
+}
+
+void MainWindow::on_pushButton_33_clicked()
+{
+    if (!ui->tableWidget_4)
+        return;
+
+    QString fileName = QFileDialog::getSaveFileName(this, "Exporter les locaux",
+                                                   "locaux.csv", "CSV (*.csv)");
+    if (fileName.isEmpty())
+        return;
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        QMessageBox::critical(this, "Locaux", "Impossible d'ouvrir le fichier pour écriture.");
+        return;
+    }
+
+    QTextStream out(&file);
+    QStringList headers;
+    for (int c = 0; c < ui->tableWidget_4->columnCount(); ++c)
+        headers << ui->tableWidget_4->horizontalHeaderItem(c)->text();
+    out << headers.join(';') << "\n";
+
+    for (int r = 0; r < ui->tableWidget_4->rowCount(); ++r)
+    {
+        QStringList rowValues;
+        for (int c = 0; c < ui->tableWidget_4->columnCount(); ++c)
+        {
+            QTableWidgetItem *item = ui->tableWidget_4->item(r, c);
+            rowValues << (item ? item->text() : QString());
+        }
+        out << rowValues.join(';') << "\n";
+    }
+    file.close();
+    QMessageBox::information(this, "Locaux", "Export CSV terminé.");
+}
+
+void MainWindow::on_pushButton_34_clicked()
+{
+    if (!ui->lineEdit_27 || !ui->lineEdit_28)
+        return;
+
+    bool ok = false;
+    int id = ui->lineEdit_28->text().toInt(&ok);
+    if (!ok)
+    {
+        QMessageBox::warning(this, "Locaux", "Veuillez fournir un ID valide pour modifier.");
+        return;
+    }
+
+    const QString nom = ui->lineEdit_27->text().trimmed();
+    if (nom.isEmpty())
+    {
+        QMessageBox::warning(this, "Locaux", "Le nom du local est requis.");
+        return;
+    }
+
+    local l(id, nom, ui->comboBox_14 ? ui->comboBox_14->currentText() : QString(),
+            ui->comboBox_13 ? ui->comboBox_13->currentText() : QString());
+
+    if (l.UPDATE())
+    {
+        refreshLocalTable();
+        QMessageBox::information(this, "Locaux", "Local mis à jour.");
+    }
+    else
+    {
+        QMessageBox::critical(this, "Locaux", "La mise à jour a échoué.");
+    }
+}
+
+void MainWindow::on_pushButton_35_clicked()
+{
+    if (!ui->tableWidget_4)
+        return;
+
+    int row = ui->tableWidget_4->currentRow();
+    if (row < 0)
+    {
+        QMessageBox::warning(this, "Locaux", "Sélectionnez un local à supprimer.");
+        return;
+    }
+
+    bool ok = false;
+    int id = ui->tableWidget_4->item(row, 1)->text().toInt(&ok);
+    if (!ok)
+    {
+        QMessageBox::warning(this, "Locaux", "ID sélectionné invalide.");
+        return;
+    }
+
+    local l;
+    if (l.DELETEE(id))
+    {
+        refreshLocalTable();
+        QMessageBox::information(this, "Locaux", "Local supprimé.");
+    }
+    else
+    {
+        QMessageBox::critical(this, "Locaux", "Suppression impossible.");
+    }
+}
+
+void MainWindow::on_pushButton_36_clicked()
+{
+    if (!ui->tableWidget_4)
+        return;
+
+    int total = ui->tableWidget_4->rowCount();
+    QMap<QString, int> byState;
+    for (int r = 0; r < total; ++r)
+    {
+        QString state = ui->tableWidget_4->item(r, 2)->text();
+        byState[state]++;
+    }
+
+    QStringList lines;
+    lines << QString("Total locaux: %1").arg(total);
+    for (auto it = byState.constBegin(); it != byState.constEnd(); ++it)
+    {
+        lines << QString("- %1: %2").arg(it.key()).arg(it.value());
+    }
+
+    QMessageBox::information(this, "Statistiques Locaux", lines.join("\n"));
+}
+
+void MainWindow::on_tableWidget_4_cellClicked(int row, int column)
+{
+    Q_UNUSED(column);
+    populateLocalFormFromRow(row);
 }
 
 /**
