@@ -29,7 +29,7 @@
 #include <cstring>
 #include <sstream>
 #include <utility>
-#include "qrcodegen_real.hpp"
+#include "qrcodegen_real.h"
 
 using std::int8_t;
 using std::uint8_t;
