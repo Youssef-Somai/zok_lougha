@@ -6,11 +6,13 @@
 #include <QTableWidgetItem>
 #include <QHeaderView>
 #include <QRegularExpression>
+#include <QRegularExpressionValidator>
 #include <QFileDialog>
 #include <QPixmap>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
+#include <QDebug>
 #include <QtCharts/QChart>
 #include <QtCharts/QPieSeries>
 #include <QtCharts/QPieSlice>

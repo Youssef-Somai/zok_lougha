@@ -3,6 +3,7 @@
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QVariant>
+#include <QList>
 #include <QDebug>
 #include <QRegularExpression>
 #include <QJsonObject>

@@ -6,6 +6,8 @@
 #include <QFile>
 #include <QDir>
 #include <QCoreApplication>
+#include <QDebug>
+#include <QFileInfo>
 #include "connection.h"
 #include "aiverifier.h"
 
