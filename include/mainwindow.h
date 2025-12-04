@@ -6,6 +6,7 @@
 #include <QTableWidget>
 #include <QImage>
 #include <QByteArray>
+#include <QString>
 #include <QtCharts/QChartView>
 #include <QtCharts/QPieSeries>
 #include <QtCharts/QPieSlice>
@@ -122,6 +123,7 @@ private:
     // ===== Member Variables =====
     QImage currentMaterielImage;  // Stores the current material image
     bool hasImageData;            // Flag to track if image is set
+    QString imagePreviewPlaceholder; // Placeholder text for image preview label
 
     // ===== Statistics Chart =====
     QChartView *statisticsChartView;  // Chart view for statistics

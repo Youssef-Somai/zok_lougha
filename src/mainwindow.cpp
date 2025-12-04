@@ -697,12 +697,25 @@ void MainWindow::createImageUIElements()
 {
     qDebug() << "Setting up image UI elements...";
 
-    // Note: If the UI elements exist in mainwindow.ui, Qt Designer will have created them
-    // This method serves as a fallback and for dynamic setup
+    if (ui->label_image_preview_materiel)
+    {
+        // Store the default placeholder so we can restore it when clearing the preview
+        imagePreviewPlaceholder = ui->label_image_preview_materiel->text();
 
-    // Check if image preview label exists, if not log warning
-    // In a production scenario, you would create the widgets programmatically here
-    // For now, we'll rely on the UI file having these elements
+        if (imagePreviewPlaceholder.trimmed().isEmpty())
+        {
+            imagePreviewPlaceholder =
+                QStringLiteral("📷\n\nAucune image\n\nCliquez sur \"Charger Image\" ou \"Capturer avec Caméra\"");
+            ui->label_image_preview_materiel->setText(imagePreviewPlaceholder);
+        }
+
+        ui->label_image_preview_materiel->setAlignment(Qt::AlignCenter);
+        ui->label_image_preview_materiel->setWordWrap(true);
+    }
+    else
+    {
+        qWarning() << "Image preview label not found in UI";
+    }
 
     qDebug() << "Image UI elements setup complete";
 }
@@ -719,8 +732,7 @@ void MainWindow::displayImagePreview(const QImage &image)
         return;
     }
 
-    // Check if label exists in UI (you'll need to add this widget to mainwindow.ui)
-    QLabel *imageLabel = ui->centralwidget->findChild<QLabel*>("label_image_preview_materiel");
+    QLabel *imageLabel = ui->label_image_preview_materiel;
 
     if (imageLabel)
     {
@@ -733,6 +745,7 @@ void MainWindow::displayImagePreview(const QImage &image)
         );
 
         imageLabel->setPixmap(scaledPixmap);
+        imageLabel->setText(QString());
         imageLabel->setScaledContents(false);
         imageLabel->setAlignment(Qt::AlignCenter);
 
@@ -753,12 +766,14 @@ void MainWindow::displayImagePreview(const QImage &image)
  */
 void MainWindow::clearImagePreview()
 {
-    QLabel *imageLabel = ui->centralwidget->findChild<QLabel*>("label_image_preview_materiel");
+    QLabel *imageLabel = ui->label_image_preview_materiel;
 
     if (imageLabel)
     {
         imageLabel->clear();
-        imageLabel->setText("Aucune image");
+        imageLabel->setText(imagePreviewPlaceholder.isEmpty()
+                                ? QStringLiteral("Aucune image")
+                                : imagePreviewPlaceholder);
         imageLabel->setAlignment(Qt::AlignCenter);
     }
 
