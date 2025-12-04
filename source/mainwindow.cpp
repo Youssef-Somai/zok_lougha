@@ -57,19 +57,18 @@
 #include "local.h"
 #include "smtp.h"
 
-using namespace QtCharts;
-
 /* =========================
  *  CONSTRUCTEUR / DTOR
  * ========================= */
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , connexion(nullptr)  // Initialize connexion from main branch
+    , db(QSqlDatabase())
     , hasImageData(false)  // Initialize image flag
     , statisticsChartView(nullptr)  // Initialize chart view
     , currentSortColumn(-1)  // No initial sort
     , currentSortOrder(Qt::AscendingOrder)  // Default ascending
-    , connexion(nullptr)  // Initialize connexion from main branch
     , loc(nullptr)  // Initialize local from main branch
 {
     ui->setupUi(this);
@@ -1230,7 +1229,7 @@ void MainWindow::createStatisticsChart()
     QVBoxLayout *mainLayout = new QVBoxLayout(statsDialog);
 
     // ===== STATE DISTRIBUTION CHART =====
-    QPieSeries *stateSeries = new QPieSeries();
+    QtCharts::QPieSeries *stateSeries = new QtCharts::QPieSeries();
     stateSeries->setHoleSize(0.4);  // Make it a donut chart
 
     // Define colors for each state
@@ -1242,31 +1241,31 @@ void MainWindow::createStatisticsChart()
 
     for (auto it = stateCount.begin(); it != stateCount.end(); ++it)
     {
-        QPieSlice *slice = stateSeries->append(it.key() + QString(" (%1)").arg(it.value()), it.value());
+        QtCharts::QPieSlice *slice = stateSeries->append(it.key() + QString(" (%1)").arg(it.value()), it.value());
         slice->setLabelVisible(true);
-        slice->setLabelPosition(QPieSlice::LabelOutside);
+        slice->setLabelPosition(QtCharts::QPieSlice::LabelOutside);
         if (stateColors.contains(it.key()))
             slice->setColor(stateColors[it.key()]);
 
         // Highlight slice on hover
         slice->setExplodeDistanceFactor(0.1);
-        connect(slice, &QPieSlice::hovered, [slice](bool state) {
+        connect(slice, &QtCharts::QPieSlice::hovered, [slice](bool state) {
             slice->setExploded(state);
         });
     }
 
-    QChart *stateChart = new QChart();
+    QtCharts::QChart *stateChart = new QtCharts::QChart();
     stateChart->addSeries(stateSeries);
     stateChart->setTitle("Distribution par État");
-    stateChart->setAnimationOptions(QChart::SeriesAnimations);
+    stateChart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     stateChart->legend()->setAlignment(Qt::AlignRight);
 
-    QChartView *stateChartView = new QChartView(stateChart);
+    QtCharts::QChartView *stateChartView = new QtCharts::QChartView(stateChart);
     stateChartView->setRenderHint(QPainter::Antialiasing);
     stateChartView->setMinimumHeight(300);
 
     // ===== CATEGORY DISTRIBUTION CHART =====
-    QPieSeries *categorySeries = new QPieSeries();
+    QtCharts::QPieSeries *categorySeries = new QtCharts::QPieSeries();
     categorySeries->setHoleSize(0.4);  // Make it a donut chart
 
     // Define colors for each category
@@ -1278,26 +1277,26 @@ void MainWindow::createStatisticsChart()
 
     for (auto it = categoryCount.begin(); it != categoryCount.end(); ++it)
     {
-        QPieSlice *slice = categorySeries->append(it.key() + QString(" (%1)").arg(it.value()), it.value());
+        QtCharts::QPieSlice *slice = categorySeries->append(it.key() + QString(" (%1)").arg(it.value()), it.value());
         slice->setLabelVisible(true);
-        slice->setLabelPosition(QPieSlice::LabelOutside);
+        slice->setLabelPosition(QtCharts::QPieSlice::LabelOutside);
         if (categoryColors.contains(it.key()))
             slice->setColor(categoryColors[it.key()]);
 
         // Highlight slice on hover
         slice->setExplodeDistanceFactor(0.1);
-        connect(slice, &QPieSlice::hovered, [slice](bool state) {
+        connect(slice, &QtCharts::QPieSlice::hovered, [slice](bool state) {
             slice->setExploded(state);
         });
     }
 
-    QChart *categoryChart = new QChart();
+    QtCharts::QChart *categoryChart = new QtCharts::QChart();
     categoryChart->addSeries(categorySeries);
     categoryChart->setTitle("Distribution par Catégorie");
-    categoryChart->setAnimationOptions(QChart::SeriesAnimations);
+    categoryChart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     categoryChart->legend()->setAlignment(Qt::AlignRight);
 
-    QChartView *categoryChartView = new QChartView(categoryChart);
+    QtCharts::QChartView *categoryChartView = new QtCharts::QChartView(categoryChart);
     categoryChartView->setRenderHint(QPainter::Antialiasing);
     categoryChartView->setMinimumHeight(300);
 
@@ -2027,18 +2026,18 @@ void MainWindow::afficher_stat_act()
 {
     QMap<QString,int> stats = Activite::statistiquesParType(db);
 
-    QPieSeries *series = new QPieSeries();
+    QtCharts::QPieSeries *series = new QtCharts::QPieSeries();
     for(auto it = stats.begin(); it != stats.end(); ++it) {
         series->append(it.key() + " : " + QString::number(it.value()), it.value());
     }
 
-    QChart *chart = new QChart();
+    QtCharts::QChart *chart = new QtCharts::QChart();
     chart->addSeries(series);
     chart->setTitle("Statistiques des activites selon Type");
     series->setHoleSize(0.3);
     chart->legend()->setAlignment(Qt::AlignRight);
 
-    QChartView *chartView = new QChartView(chart);
+    QtCharts::QChartView *chartView = new QtCharts::QChartView(chart);
     chartView->setRenderHint(QPainter::Antialiasing);
 
 
