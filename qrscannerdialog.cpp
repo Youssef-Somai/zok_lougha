@@ -1,5 +1,5 @@
 #include "qrscannerdialog.h"
-#include "qrcodegen_real.hpp"
+#include "qrcodegen_real.h"
 #include "qrdecoder.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
