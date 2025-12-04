@@ -12,9 +12,9 @@
 const QStringList Materiel::CATEGORIES_VALIDES =
     {"Informatique", "Bureautique", "Sport", "Autre"};
 const QStringList Materiel::ETATS_VALIDES =
-    {"Disponible", "En panne", "En réparation", "Empruntee" ,};
-const QStringList Materiel::UTLISATEUR_VALIDES =
-    {"Formateur", "Administration", "Adherent",};
+    {"Disponible", "En panne", "En réparation", "Empruntee"};
+const QStringList Materiel::UTILISATEUR_VALIDES =
+    {"Formateur", "Administration", "Adherent"};
 
 
 Materiel::Materiel()

@@ -1,5 +1,6 @@
 #include "qrdecoder.h"
 #include <QDebug>
+#include <cstring>
 
 extern "C" {
 #include "quirc.h"

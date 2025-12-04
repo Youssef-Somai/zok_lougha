@@ -91,7 +91,7 @@ private:
     // Listes des valeurs valides pour les énumérations
     static const QStringList CATEGORIES_VALIDES;
     static const QStringList ETATS_VALIDES;
-    static const QStringList UTLISATEUR_VALIDES;
+    static const QStringList UTILISATEUR_VALIDES;
 };
 
 #endif // MATERIEL_H

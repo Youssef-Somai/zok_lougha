@@ -7,8 +7,12 @@ class Connexion
 {
 private:
     QSqlDatabase db;
-public: Connexion();
+
+public:
+    Connexion();
     bool ouvrir();
     void fermer();
-    QSqlDatabase getDB() const { return db; } };
-#endif // CONNEXION_H ;
+    QSqlDatabase getDB() const { return db; }
+};
+
+#endif // CONNEXION_H

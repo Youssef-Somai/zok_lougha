@@ -23,4 +23,4 @@ bool Connexion::ouvrir()
 void Connexion::fermer()
 {
     if(db.isOpen()) db.close();
-} ;
+}
