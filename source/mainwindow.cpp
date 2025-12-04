@@ -11,6 +11,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
+#include <QtCharts/QChartGlobal>
 #include <QtCharts/QChart>
 #include <QtCharts/QPieSeries>
 #include <QtCharts/QPieSlice>
@@ -46,6 +47,8 @@
 #include "materiel.h"
 #include "qrcodehelper.h"
 #include "qrscannerdialog.h"
+#include "header/imagehandler.h"
+#include "header/aiverifier.h"
 
 // Includes for main branch classes
 #include "activite.h"
@@ -2638,7 +2641,35 @@ void MainWindow::on_ex_clicked()
 
 void MainWindow::on_trier_clicked()
 {
-    ui->tableLoc->setModel(loc->trie());
+    QString etat = ui->tt->currentText();
+
+    QSqlQueryModel *model = new QSqlQueryModel();
+
+    if (etat == "Tous") {
+        model->setQuery(
+            "SELECT ID_LOCAL, NOM_L, ETAT_LOCAL, TYPE_LOCAL FROM LOCAL "
+            "ORDER BY CASE "
+            "   WHEN ETAT_LOCAL = 'Disponible' THEN 1 "
+            "   WHEN ETAT_LOCAL = 'En Maintenance' THEN 2 "
+            "   WHEN ETAT_LOCAL = 'Occupée' THEN 3 "
+            "   ELSE 4 "
+            "END, NOM_L ASC"
+            );
+    }
+    else {
+        model->setQuery(
+            "SELECT ID_LOCAL, NOM_L, ETAT_LOCAL, TYPE_LOCAL FROM LOCAL "
+            "WHERE ETAT_LOCAL = '" + etat + "' "
+                     "ORDER BY NOM_L ASC"
+            );
+    }
+
+    model->setHeaderData(0, Qt::Horizontal, "ID_LOCAL");
+    model->setHeaderData(1, Qt::Horizontal, "NOM_L");
+    model->setHeaderData(2, Qt::Horizontal, "ETAT_LOCAL");
+    model->setHeaderData(3, Qt::Horizontal, "TYPE_LOCAL");
+
+    ui->tableLoc->setModel(model);
 }
 
 void MainWindow::on_stat_clicked()
@@ -2730,7 +2761,6 @@ void MainWindow::on_archiveItem_selected(QListWidgetItem *item)
         return;
 
     bool ok = true;
-    int original = ID_LOCAL;
 
     while (loc->localExists(ID_LOCAL))
     {

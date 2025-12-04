@@ -9,6 +9,7 @@
 #include <QListWidgetItem>
 #include <QInputDialog>
 #include <QImage>
+#include <QtCharts/QChartGlobal>
 #include <QtCharts/QChartView>
 
 #include "activite.h"
