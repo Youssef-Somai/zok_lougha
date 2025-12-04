@@ -18,6 +18,7 @@
 #include <QtCharts/QLegend>
 #include <QPrinter>
 #include <QPainter>
+#include <QFont>
 #include <QTextDocument>
 #include <QTextCursor>
 #include <QTextTable>
@@ -28,6 +29,17 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QDialogButtonBox>
+#include <QValidator>
+#include <QRegularExpressionValidator>
+#include <QIntValidator>
+#include <QInputDialog>
+#include <QPropertyAnimation>
+#include <QTimer>
+#include <QTextStream>
+#include <QFile>
+#include <QPdfWriter>
+#include <QPageSize>
+#include <QAbstractItemModel>
 #include "materiel.h"
 #include "qrcodehelper.h"
 #include "qrscannerdialog.h"
@@ -93,6 +105,38 @@ MainWindow::MainWindow(QWidget *parent)
     // Create image-related UI elements programmatically if not in .ui file
     // This allows the application to work even if .ui file doesn't have image widgets yet
     createImageUIElements();
+
+    // ======= ACTIVITÉS / ADHÉRENTS / LOCAUX (INITIALISATION) =======
+    highlighterJoursActivites();
+    chargerTableAdherents();
+    chargerActivites();
+    afficherToutesActivitesDansTabA2();
+    chargerSuggestionCoach();
+
+    if (ui->tabA)
+    {
+        ui->tabA->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        ui->tabA->setSelectionBehavior(QAbstractItemView::SelectRows);
+    }
+
+    if (ui->tabA_2)
+    {
+        ui->tabA_2->setColumnCount(9);
+        ui->tabA_2->setHorizontalHeaderLabels({"ID", "Nom", "Type", "Horaire", "Durée", "Status", "NbP", "Coach", "Local_A"});
+    }
+
+    // Contrôles de saisie pour les adhérents
+    QRegularExpression rxNom("^[A-Za-z ]*$");
+    QValidator *validatorNom = new QRegularExpressionValidator(rxNom, this);
+    if (ui->nom_a1) ui->nom_a1->setValidator(validatorNom);
+    if (ui->prenom_a1) ui->prenom_a1->setValidator(validatorNom);
+
+    QIntValidator *validatorChiffre = new QIntValidator(0, 99999999, this);
+    if (ui->cin_a1) ui->cin_a1->setValidator(validatorChiffre);
+    if (ui->gsm_a1) ui->gsm_a1->setValidator(validatorChiffre);
+
+    if (ui->date_a1) ui->date_a1->setCalendarPopup(true);
+    if (ui->statusA1) ui->statusA1->setCurrentIndex(0);
 }
 
 MainWindow::~MainWindow()
@@ -1656,46 +1700,182 @@ void MainWindow::on_pb_export_pdf_clicked()
 
 void MainWindow::on_bajouterA_clicked()
 {
-    // TODO: Implement activity add functionality
-    QMessageBox::information(this, "À implémenter", "Fonction d'ajout d'activité à implémenter");
+    Activite a = getActiviteFromInputs();
+    QString text = ui->coachA1->currentText();
+    if (text.isEmpty()) {
+        QMessageBox::warning(this, "Erreur", "Veuillez sélectionner un coach !");
+        return;
+    }
+    QStringList parts = text.split(" - ");
+    if (parts.isEmpty()) {
+        QMessageBox::warning(this, "Erreur", "Format du coach invalide !");
+        return;
+    }
+    int coachId = parts[0].toInt();
+    a.setCoach(coachId);
+    int id = ui->IDA1->text().toInt();
+    if (id == 0) {
+        QMessageBox::warning(this, "Erreur", "Veuillez saisir un ID valide !");
+        return;
+    }
+    QSqlQuery verif(db);
+    verif.prepare("SELECT COUNT(*) FROM EMPLOYE WHERE ID_EMPLOYE = :id AND STATUS='libre'");
+    verif.bindValue(":id", a.getCoach());
+    verif.exec();
+    verif.next();
+    if (verif.value(0).toInt() == 0)
+    {
+        QMessageBox::warning(this, "Erreur", "Le coach n’existe pas ou n’est pas libre !");
+        return;
+    }
+    verif.prepare("SELECT COUNT(*) FROM LOCAL WHERE ID_LOCAL = :id");
+    verif.bindValue(":id", a.getlocal_A());
+    verif.exec();
+    verif.next();
+    if (verif.value(0).toInt() == 0)
+    {
+        QMessageBox::warning(this, "Erreur", "Le local n’existe pas !");
+        return;
+    }
+    if (a.ajouter(db))
+    {
+        chargerActivites();
+        clearAjouterAInputs();
+        QMessageBox::information(this, "Succès", "Activité ajoutée !");
+    }
+    else
+    {
+        QMessageBox::critical(this, "Erreur", "Échec d'ajout !");
+    }
 }
 
 void MainWindow::on_bannulerA_clicked()
 {
-    // TODO: Implement activity cancel functionality
+    clearAjouterAInputs();
 }
 
 void MainWindow::on_b_A_supprimer_clicked()
 {
-    // TODO: Implement activity delete functionality
-    QMessageBox::information(this, "À implémenter", "Fonction de suppression d'activité à implémenter");
+    int id = ui->IDMas->text().toInt();
+
+    // ---- Contrôle de saisie ----
+    if (ui->IDMas->text().isEmpty()) {
+        QMessageBox::warning(this, "Erreur", "Veuillez saisir un ID !");
+        return;
+    }
+
+    if (id <= 0) {
+        QMessageBox::warning(this, "Erreur", "ID invalide !");
+        return;
+    }
+
+    // ---- Message de confirmation ----
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(
+        this,
+        "Confirmation",
+        "Êtes-vous sûr de vouloir supprimer cette activité ?",
+        QMessageBox::Yes | QMessageBox::No
+        );
+
+    if (reply == QMessageBox::No) {
+        return; // Annuler la suppression
+    }
+
+    // ---- Suppression ----
+    Activite a;
+    a.setId(id);
+
+    if (a.supprimer(db)) {
+        chargerActivites();
+        QMessageBox::information(this, "Succès", "Activité supprimée !");
+    } else {
+        QMessageBox::warning(this, "Erreur", "Aucune activité trouvée avec cet ID !");
+    }
 }
 
 void MainWindow::on_b_A_modifier_clicked()
 {
-    // TODO: Implement activity modify functionality
-    QMessageBox::information(this, "À implémenter", "Fonction de modification d'activité à implémenter");
+    int id = ui->IDMas->text().toInt();
+    if (id == 0) {
+        QMessageBox::warning(this, "Erreur", "ID invalide !");
+        return;
+    }
+
+    QSqlQuery query(db);
+    query.prepare("SELECT * FROM ACTIVITE WHERE ID_ACTIVITE=:id");
+    query.bindValue(":id", id);
+
+    if (query.exec() && query.next()) {
+        Activite a(query.value("ID_ACTIVITE").toInt(),
+                   query.value("NOM").toString(),
+                   query.value("TYPE").toString(),
+                   query.value("DUREE").toString(),
+                   query.value("HORAIRE").toDateTime(),
+                   query.value("COACH").toInt(),
+                   query.value("NBP").toInt(),
+                   query.value("LOCAL_A").toInt(),
+                   query.value("STATUS").toString());
+        remplirModifierA(a);
+        ui->tabActiviter->setCurrentIndex(1);
+    } else {
+        QMessageBox::warning(this, "Erreur", "Activité introuvable !");
+    }
 }
 
 void MainWindow::on_ok_modif_A_clicked()
 {
-    // TODO: Implement activity modification confirmation
+    Activite a;
+    a.setId(ui->idm->text().toInt());
+    a.setNom(ui->nomm->text());
+    a.setType(ui->typem->currentText());
+    a.setHoraire(ui->horairem->dateTime());
+    a.setDuree(ui->dureem->time().toString("HH:mm"));
+    a.setCoach(ui->coachm->text().toInt());
+    a.setLocal_A(ui->local_Am->text().toInt());
+    a.setStatus(ui->statusm->currentText());
+    a.setNbp(ui->npam->value());
+
+    if (a.modifier(db)) {
+        chargerActivites();
+        ui->tabActiviter->setCurrentIndex(0);
+        QMessageBox::information(this, "Succès", "Activité modifiée !");
+    } else {
+        QMessageBox::critical(this, "Erreur", "Échec modification !");
+    }
 }
 
 void MainWindow::on_annuler_modif_A_clicked()
 {
-    // TODO: Implement activity modification cancellation
+    ui->tabActiviter->setCurrentIndex(0);
 }
 
 void MainWindow::on_b_A_afficher_clicked()
 {
-    // TODO: Implement activity display functionality
-    QMessageBox::information(this, "À implémenter", "Fonction d'affichage d'activité à implémenter");
+    int id = ui->IDMas->text().toInt();
+    if (id == 0) {
+        QMessageBox::warning(this, "Erreur", "ID invalide !");
+        return;
+    }
+
+    Activite ac;
+    bool found = false;
+
+    Activite a = ac.getActiviteById(id, db, found);
+
+    if (found) {
+        remplirAfficherA(a);
+        setAfficherAEditable(false);
+        ui->tabActiviter->setCurrentIndex(2);
+    } else {
+        QMessageBox::warning(this, "Erreur", "Activité introuvable !");
+    }
 }
 
 void MainWindow::on_ok_aff_A_clicked()
 {
-    // TODO: Implement activity display confirmation
+    ui->tabActiviter->setCurrentIndex(0);
+    setAfficherAEditable(true);
 }
 
 // ==========================================
@@ -1704,23 +1884,57 @@ void MainWindow::on_ok_aff_A_clicked()
 
 void MainWindow::afficherCalendrier()
 {
-    // TODO: Implement calendar display
+    ui->tabActiviter->setCurrentIndex(3);
 }
 
 void MainWindow::afficherActivitesDuJour(const QDate &date)
 {
-    // TODO: Implement daily activities display
-    Q_UNUSED(date);
+    ui->tabA_2->clearContents();
+    ui->tabA_2->setRowCount(0);
+
+    QList<Activite> activites = Activite::getActivitesDuJour(date, db);
+
+    int row = 0;
+    for (const Activite &a : activites)
+    {
+        ui->tabA_2->insertRow(row);
+
+        ui->tabA_2->setItem(row, 0, new QTableWidgetItem(QString::number(a.getId())));
+        ui->tabA_2->setItem(row, 1, new QTableWidgetItem(a.getNom()));
+        ui->tabA_2->setItem(row, 2, new QTableWidgetItem(a.getType()));
+        ui->tabA_2->setItem(row, 3, new QTableWidgetItem(a.getHoraire().toString("yyyy-MM-dd")));
+        ui->tabA_2->setItem(row, 4, new QTableWidgetItem(a.getDuree()));
+        ui->tabA_2->setItem(row, 5, new QTableWidgetItem(a.getStatus()));
+        ui->tabA_2->setItem(row, 6, new QTableWidgetItem(QString::number(a.getNbp())));
+        ui->tabA_2->setItem(row, 7, new QTableWidgetItem(QString::number(a.getCoach())));
+        ui->tabA_2->setItem(row, 8, new QTableWidgetItem(QString::number(a.getlocal_A())));
+
+        row++;
+    }
 }
 
 void MainWindow::afficherToutesActivitesDansTabA2()
 {
-    // TODO: Implement all activities display in table
+    ui->tabA_2->clearContents();
+    ui->tabA_2->setRowCount(0);
+
+    Activite ac;
+    QVector<QStringList> data = ac.getToutesActivites(db);
+
+    for(int row = 0; row < data.size(); row++) {
+        ui->tabA_2->insertRow(row);
+
+        for(int col = 0; col < data[row].size(); col++) {
+            QTableWidgetItem *item = new QTableWidgetItem(data[row][col]);
+            item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+            ui->tabA_2->setItem(row, col, item);
+        }
+    }
 }
 
 void MainWindow::on_B_A_retour_2_clicked()
 {
-    // TODO: Implement return button
+    ui->tabActiviter->setCurrentIndex(0); // 0 = ajouterA
 }
 
 // ==========================================
@@ -1729,14 +1943,72 @@ void MainWindow::on_B_A_retour_2_clicked()
 
 void MainWindow::on_Btrier_clicked()
 {
-    // TODO: Implement sorting functionality
-    QMessageBox::information(this, "À implémenter", "Fonction de tri à implémenter");
+    QString critere = ui->trier->currentText();
+
+    if(critere.isEmpty()) {
+        QMessageBox::warning(this,"Attention","Veuillez choisir un critère !");
+        return;
+    }
+
+    QSqlQuery query = Activite::trierActivites(critere, db);
+
+    if(!query.isActive()) {
+        QMessageBox::critical(this, "Erreur", "Erreur lors du tri !");
+        return;
+    }
+
+    ui->tabA->clearContents();
+    ui->tabA->setRowCount(0);
+
+    int row = 0;
+    while(query.next()) {
+        ui->tabA->insertRow(row);
+
+        ui->tabA->setItem(row,0,new QTableWidgetItem(query.value("ID_ACTIVITE").toString()));
+        ui->tabA->setItem(row,1,new QTableWidgetItem(query.value("NOM").toString()));
+        ui->tabA->setItem(row,2,new QTableWidgetItem(query.value("TYPE").toString()));
+        ui->tabA->setItem(row,3,new QTableWidgetItem(query.value("HORAIRE").toDateTime().toString("yyyy-MM-dd")));
+        ui->tabA->setItem(row,4,new QTableWidgetItem(query.value("DUREE").toString()));
+        ui->tabA->setItem(row,5,new QTableWidgetItem(query.value("STATUS").toString()));
+        ui->tabA->setItem(row,6,new QTableWidgetItem(query.value("NBP").toString()));
+        ui->tabA->setItem(row,7,new QTableWidgetItem(query.value("COACH").toString()));
+        ui->tabA->setItem(row,8,new QTableWidgetItem(query.value("LOCAL_A").toString()));
+
+        row++;
+    }
 }
 
 void MainWindow::on_Bchercher_clicked()
 {
-    // TODO: Implement search functionality
-    QMessageBox::information(this, "À implémenter", "Fonction de recherche à implémenter");
+    int id = ui->idr->text().toInt();
+    if(id == 0) {
+        QMessageBox::warning(this,"Erreur","Veuillez saisir un ID valide !");
+        return;
+    }
+
+
+    QSqlQuery query = Activite::chercherActiviteParID(id, db);
+
+    if(query.next()) {
+
+        ui->tabA->clearContents();
+        ui->tabA->setRowCount(1);
+
+        ui->tabA->setItem(0, 0, new QTableWidgetItem(query.value("ID_ACTIVITE").toString()));
+        ui->tabA->setItem(0, 1, new QTableWidgetItem(query.value("NOM").toString()));
+        ui->tabA->setItem(0, 2, new QTableWidgetItem(query.value("TYPE").toString()));
+        ui->tabA->setItem(0, 3, new QTableWidgetItem(query.value("DUREE").toString()));
+        ui->tabA->setItem(0, 4, new QTableWidgetItem(query.value("HORAIRE").toDateTime().toString("yyyy-MM-dd hh:mm")));
+        ui->tabA->setItem(0, 5, new QTableWidgetItem(query.value("COACH").toString()));
+        ui->tabA->setItem(0, 6, new QTableWidgetItem(query.value("LOCAL_A").toString()));
+        ui->tabA->setItem(0, 7, new QTableWidgetItem(query.value("NBP").toString()));
+        ui->tabA->setItem(0, 8, new QTableWidgetItem(query.value("STATUS").toString()));
+
+        setAfficherAEditable(false);
+    }
+    else {
+        QMessageBox::warning(this,"Erreur","Aucune activité trouvée avec cet ID !");
+    }
 }
 
 // ==========================================
@@ -1745,38 +2017,87 @@ void MainWindow::on_Bchercher_clicked()
 
 void MainWindow::afficher_stat_act()
 {
-    // TODO: Implement activity statistics display
+    QMap<QString,int> stats = Activite::statistiquesParType(db);
+
+    QPieSeries *series = new QPieSeries();
+    for(auto it = stats.begin(); it != stats.end(); ++it) {
+        series->append(it.key() + " : " + QString::number(it.value()), it.value());
+    }
+
+    QChart *chart = new QChart();
+    chart->addSeries(series);
+    chart->setTitle("Statistiques des activites selon Type");
+    series->setHoleSize(0.3);
+    chart->legend()->setAlignment(Qt::AlignRight);
+
+    QChartView *chartView = new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
+
+
+    QLayoutItem *item;
+    while ((item = ui->stat_layout->takeAt(0)) != nullptr) {
+        if(item->widget()) delete item->widget();
+        delete item;
+    }
+
+    ui->stat_layout->addWidget(chartView);
 }
 
 void MainWindow::on_B_retour_stat_act_clicked()
 {
-    // TODO: Implement return from statistics
+    ui->tabActiviter->setCurrentIndex(0);
 }
 
 void MainWindow::on_Bexporter_clicked()
 {
-    // TODO: Implement export functionality
-    QMessageBox::information(this, "À implémenter", "Fonction d'export à implémenter");
+    QString fileName = QFileDialog::getSaveFileName(this, "Exporter en PDF", "", "*.pdf");
+    if(fileName.isEmpty()) return;
+    if(!fileName.endsWith(".pdf")) fileName += ".pdf";
+
+    if(Activite::exporterVersPDF(ui->tabA, fileName))
+        QMessageBox::information(this, "Succès", "Export PDF terminé !");
+    else
+        QMessageBox::warning(this, "Attention", "Le tableau est vide !");
 }
 
 void MainWindow::on_afficher_regroupement_clicked()
 {
-    // TODO: Implement grouping display
+    ui->tabActiviter->setCurrentIndex(5);
+
+    QSqlQueryModel *model = Activite::getRegroupementAdherents();
+    if(!model) {
+        QMessageBox::warning(this, "Erreur SQL", "Impossible de charger le regroupement !");
+        return;
+    }
+
+    ui->tableView_regroupement->setModel(model);
 }
 
 void MainWindow::on_B_retour_stat_act_2_clicked()
 {
-    // TODO: Implement return from statistics 2
+    ui->tabActiviter->setCurrentIndex(0);
 }
 
 void MainWindow::chargerSuggestionCoach()
 {
-    // TODO: Implement coach suggestions loading
+    Activite a;
+    a.chargerSuggestionCoach(ui->coachA1, db);
 }
 
 void MainWindow::highlighterJoursActivites()
 {
-    // TODO: Implement calendar highlighting for activity days
+    ui->calendarWidget->setDateTextFormat(QDate(), QTextCharFormat());
+
+
+    QList<QDate> dates = Activite::getDatesAvecActivites(db);
+
+
+    QTextCharFormat format;
+    format.setBackground(Qt::green);
+
+    for (const QDate &d : dates) {
+        ui->calendarWidget->setDateTextFormat(d, format);
+    }
 }
 
 // ==========================================
@@ -1785,22 +2106,22 @@ void MainWindow::highlighterJoursActivites()
 
 void MainWindow::on_B_A_retour_clicked()
 {
-    // TODO: Implement return navigation
+    ui->stackedWidget->setCurrentIndex(2);
 }
 
 void MainWindow::on_B_A_retour_5_clicked()
 {
-    // TODO: Implement return navigation 5
+    ui->stackedWidget->setCurrentIndex(2);
 }
 
 void MainWindow::on_B_A_retour_6_clicked()
 {
-    // TODO: Implement return navigation 6
+    ui->stackedWidget->setCurrentIndex(0);
 }
 
 void MainWindow::on_bt_retour_accueil_clicked()
 {
-    // TODO: Implement return to home
+    ui->stackedWidget->setCurrentIndex(2);
 }
 
 // ==========================================
@@ -1809,57 +2130,226 @@ void MainWindow::on_bt_retour_accueil_clicked()
 
 void MainWindow::on_valider_a_clicked()
 {
-    // TODO: Implement member validation
-    QMessageBox::information(this, "À implémenter", "Fonction de validation d'adhérent à implémenter");
+    Adherent a;
+    a.setId(ui->id_a1->text().toInt());
+    a.setNom(ui->nom_a1->text());
+    a.setPrenom(ui->prenom_a1->text());
+    a.setGenre(ui->genre_a1->isChecked() ? "Homme" : "Femme");
+    a.setDateNaissance(ui->date_a1->text());
+    a.setCin(ui->cin_a1->text().toInt());
+    a.setAdresse(ui->adresse_a1->text());
+    a.setGsm(ui->gsm_a1->text());
+    a.setEmail(ui->mail_a1->text());
+
+    if (a.ajouter(db)) {
+        QMessageBox::information(this, "Succès", "Adhérent ajouté !");
+        chargerTableAdherents();
+        clearAdherentInputs();
+
+        // 🔹 AJOUT NECESSAIRE POUR INSCRIPTION AUTOMATIQUE
+        int idAdherent = a.getId();
+        int idActivite = ui->cbxActivite->text().toInt();
+
+        QSqlQuery check(db);
+        check.prepare("SELECT COUNT(*) FROM ACTIVITE WHERE ID_ACTIVITE = :id");
+        check.bindValue(":id", idActivite);
+        if (check.exec() && check.next() && check.value(0).toInt() > 0) {
+            a.inscrireAdherent(idAdherent, idActivite);
+
+            QSqlQuery q(db);
+            q.prepare("SELECT STATUS, NOM FROM ACTIVITE WHERE ID_ACTIVITE = :id");
+            q.bindValue(":id", idActivite);
+            if(q.exec() && q.next()) {
+                QString statut = q.value("STATUS").toString();
+                QString nomActivite = q.value("NOM").toString();
+                if(statut == "Annulée") {
+                    a.notifierAnnulation(db, idActivite, nomActivite);
+                }
+            }
+
+        } else if(idActivite != 0) {
+            QMessageBox::warning(this, "Erreur", "Cette activité n'existe pas !");
+        }
+
+    } else {
+        QMessageBox::critical(this, "Erreur", "Échec de l'ajout !");
+    }
 }
 
 void MainWindow::on_annuler_a_clicked()
 {
-    // TODO: Implement member cancellation
+    clearAdherentInputs();
 }
 
 void MainWindow::on_supprimer_a_clicked()
 {
-    // TODO: Implement member deletion
-    QMessageBox::information(this, "À implémenter", "Fonction de suppression d'adhérent à implémenter");
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "Confirmation",
+                                  "Êtes-vous sûr de vouloir supprimer cet adhérent ?",
+                                  QMessageBox::Yes | QMessageBox::No);
+
+    if (reply == QMessageBox::No)
+        return;
+    Adherent a;
+    a.setId(ui->supprimer_a1->text().toInt());
+    if(a.supprimer(db)) {
+        QMessageBox::information(this,"Succès","Adhérent supprimé !");
+    } else {
+        QMessageBox::warning(this,"Erreur","ID introuvable !");
+    }
+    chargerTableAdherents();
+
 }
 
 void MainWindow::on_modifier_a_clicked()
 {
-    // TODO: Implement member modification
-    QMessageBox::information(this, "À implémenter", "Fonction de modification d'adhérent à implémenter");
+    int id = ui->modifier_a1->text().toInt();
+    if (id == 0) {
+        QMessageBox::warning(this, "Erreur", "Veuillez saisir un ID valide !");
+        return;
+    }
+
+    Adherent a;
+    QMap<QString, QVariant> data = a.afficher(db, id);
+
+    if (!data.isEmpty()) {
+        ui->id_a1->setText(data["ID_ADHERENT"].toString());
+        ui->id_a1->setEnabled(false);
+
+        ui->nom_a1->setText(data["NOM_ADHERENT"].toString());
+        ui->prenom_a1->setText(data["PRENOM_ADHERENT"].toString());
+
+        QString genre = data["GENRE_ADHERENT"].toString();
+        if (genre == "Homme")
+            ui->genre_a1->setChecked(true);
+        else
+            ui->genre_a2->setChecked(true);
+
+        QDate date = data["DATE_DE_NAISSANCE_ADHERENT"].toDate();
+        ui->date_a1->setDate(date);
+
+        ui->cin_a1->setText(data["CIN_ADHERENT"].toString());
+        ui->adresse_a1->setText(data["ADRESSE_ADHERENT"].toString());
+        ui->gsm_a1->setText(data["GSM_ADHERENT"].toString());
+        ui->mail_a1->setText(data["EMAIL_ADHERENT"].toString());
+
+        QMessageBox::information(this, "Succès", "Adhérent trouvé et chargé !");
+    } else {
+        QMessageBox::warning(this, "Erreur", "Adhérent introuvable !");
+    }
 }
 
 void MainWindow::on_afficher_adherent_clicked()
 {
-    // TODO: Implement member display
-    QMessageBox::information(this, "À implémenter", "Fonction d'affichage des adhérents à implémenter");
+    chargerTableAdherents();
+
+    QMessageBox::information(this, "Affichage", "Table des adhérents mise à jour !");
 }
 
 void MainWindow::on_modifier_a_3_clicked()
 {
-    // TODO: Implement member modification 3
+    int id = ui->modifier_a1->text().toInt();
+    if (id == 0) {
+        QMessageBox::warning(this, "Erreur", "Veuillez saisir un ID valide pour la modification !");
+        return;
+    }
+
+    if (ui->nom_a1->text().isEmpty() ||
+        ui->prenom_a1->text().isEmpty() ||
+        (!ui->genre_a1->isChecked() && !ui->genre_a2->isChecked()) ||
+        ui->cin_a1->text().isEmpty() ||
+        ui->adresse_a1->text().isEmpty() ||
+        ui->gsm_a1->text().isEmpty() ||
+        ui->mail_a1->text().isEmpty())
+    {
+        QMessageBox::warning(this, "Champs manquants", "⚠️ Veuillez remplir tous les champs !");
+        return;
+    }
+
+    if (ui->cin_a1->text().length() != 8) {
+        QMessageBox::warning(this, "Erreur de saisie", "Le CIN doit contenir exactement 8 chiffres.");
+        return;
+    }
+
+    if (ui->gsm_a1->text().length() != 8) {
+        QMessageBox::warning(this, "Erreur de saisie", "Le numéro GSM doit contenir 8 chiffres.");
+        return;
+    }
+
+    QString email = ui->mail_a1->text();
+    QRegularExpression regexEmail("^[\\w\\.]+@[\\w\\.]+\\.[a-z]{2,4}$");
+    if (!regexEmail.match(email).hasMatch()) {
+        QMessageBox::warning(this, "Email invalide", "Veuillez entrer une adresse email valide !");
+        return;
+    }
+
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "Confirmation",
+                                  "Êtes-vous sûr de vouloir modifier cet adhérent ?",
+                                  QMessageBox::Yes | QMessageBox::No);
+    if (reply == QMessageBox::No)
+        return;
+
+    Adherent a;
+    a.setId(id);
+    a.setNom(ui->nom_a1->text());
+    a.setPrenom(ui->prenom_a1->text());
+    a.setGenre(ui->genre_a1->isChecked() ? "Homme" : "Femme");
+    a.setDateNaissance(ui->date_a1->date().toString("MM/dd/yyyy"));
+    a.setCin(ui->cin_a1->text().toInt());
+    a.setAdresse(ui->adresse_a1->text());
+    a.setGsm(ui->gsm_a1->text());
+    a.setEmail(email);
+
+    bool success = a.modifier(db);
+    if (success) {
+        QMessageBox::information(this, "Succès", "L'adhérent a été modifié avec succès !");
+        chargerTableAdherents();
+        clearAdherentInputs();
+        ui->modifier_a1->clear();
+        ui->id_a1->setEnabled(true);
+    } else {
+        QString err = db.lastError().text();
+        qDebug() << "Erreur SQL:" << err;
+        QMessageBox::critical(this, "Erreur", "Échec de la modification !\n" + err);
+    }
 }
 
 void MainWindow::on_PDF_a_clicked()
 {
-    // TODO: Implement member PDF export
-    QMessageBox::information(this, "À implémenter", "Fonction d'export PDF des adhérents à implémenter");
+    QString fileName = QFileDialog::getSaveFileName(
+        this,
+        tr("Exporter la liste des adhérents en PDF"),
+        "Rapport_Adherents.pdf",
+        tr("Fichiers PDF (*.pdf)")
+        );
+
+    if (fileName.isEmpty())
+        return;
+
+    Adherent a;
+    a.exporterPDF(db, fileName);
 }
 
 void MainWindow::on_statistics_clicked()
 {
-    // TODO: Implement member statistics
+    ui->gestiondesadherent->setCurrentIndex(1);
+    Adherent a;
+    a.genererStatistiques(db, ui->adherent_layout);
 }
 
 void MainWindow::on_filtrer_a_clicked()
 {
-    // TODO: Implement member filtering
+    QString critere = ui->trier_a1->currentText();
+    Adherent a;
+    a.trier(db, ui->table_aherent, critere);
 }
 
 void MainWindow::on_look_clicked()
 {
-    // TODO: Implement look functionality
+    QString id = ui->look1->text();
+    Adherent a;
+    a.chercher(db, ui->table_aherent, id);
 }
 
 // ==========================================
@@ -1868,84 +2358,448 @@ void MainWindow::on_look_clicked()
 
 void MainWindow::on_AjouterLoc_clicked()
 {
-    // TODO: Implement location add
-    QMessageBox::information(this, "À implémenter", "Fonction d'ajout de local à implémenter");
+    QMessageBox msgBox;
+
+    if (controlSaisie())
+    {
+        bool ok;
+        int ID_LOCAL = ui->IdLoc->text().toInt(&ok);
+
+        if (ok)
+        {
+            if (!loc->localExists(ID_LOCAL))
+            {
+                loc->setIdLocal( ID_LOCAL);
+                loc->setNomLocal(ui-> NomLoc->text());
+                loc->setEtatLocal(ui-> EtatLoc->currentText());
+                loc->setTypeLocal(ui-> TypeLoc->currentText());
+                bool test = loc->ADD();
+
+                if (test){
+                    msgBox.setText("Ajout réussi.");
+                }
+                else
+                    msgBox.setText("!! L'ajout a échoué !!");
+            }
+        }
+    }
+    else
+    {
+        QMessageBox::critical(nullptr, QObject::tr("Not OK"),
+                              QObject::tr("Please fill all fields.\n !!! There are EMPTY or INCORRECT fields !!!\n",
+                                          "Click cancel to EXIT."), QMessageBox::Cancel);
+    }
+
+    ui->tableLoc->setModel(loc->GETALL());
+
+    msgBox.exec();
 }
 
 bool MainWindow::controlSaisie()
 {
-    // TODO: Implement input control
+    QString id = ui->IdLoc->text();
+    QString nom = ui->NomLoc->text();
+    QString etat = ui->EtatLoc->currentText();
+    QString type = ui->TypeLoc->currentText();
+
+
+    if (id.isEmpty() || nom.isEmpty() || etat.isEmpty() || type.isEmpty()) {
+        return false;
+    }
+    QRegularExpression regexId("^[0-9]+$");
+    if (!regexId.match(id).hasMatch()) {
+        QMessageBox::warning(this, "Erreur de saisie", "L'ID doit contenir uniquement des chiffres.");
+        return false;
+    }
+
+    QRegularExpression regexNom("^[A-Za-zÀ-ÖØ-öø-ÿ]+$");
+    if (!regexNom.match(nom).hasMatch()) {
+        QMessageBox::warning(this, "Erreur de saisie", "Le nom doit contenir uniquement des lettres.");
+        return false;
+    }
+
     return true;
 }
 
 void MainWindow::on_tableLoc_activated(const QModelIndex &index)
 {
-    // TODO: Implement location table activation
     Q_UNUSED(index);
+    ui->tableLoc->setModel(loc->GETALL());
 }
 
 void MainWindow::on_ModifLoc_clicked()
 {
-    // TODO: Implement location modification
-    QMessageBox::information(this, "À implémenter", "Fonction de modification de local à implémenter");
+    QMessageBox msgBox;
+    QString notificationMessage = "";
+    QString bgColor = "#4caf50";
+    bool ok;
+    int ID_LOCAL = ui->IdLoc->text().toInt(&ok);
+    if (!ok) {
+        msgBox.setText("Veuillez entrer un ID de local valide.");
+        msgBox.exec();
+        return;
+    }
+
+    if (!loc->localExists(ID_LOCAL)) {
+        msgBox.setText("Le local avec l'ID " + QString::number(ID_LOCAL) + " n'existe pas.\nImpossible de modifier.");
+        msgBox.exec();
+        return;
+    }
+
+
+    QString ancienEtat = loc->getEtatLocal(ID_LOCAL);
+
+
+    QString nouveauNom = ui->NomLoc->text();
+    QString nouveauType = ui->TypeLoc->currentText();
+    QString nouvelEtat = ui->EtatLoc->currentText().toUpper();
+
+
+    loc->setIdLocal(ID_LOCAL);
+    if (!nouveauNom.isEmpty()) loc->setNomLocal(nouveauNom);
+    if (!nouvelEtat.isEmpty()) loc->setEtatLocal(nouvelEtat);
+    if (!nouveauType.isEmpty()) loc->setTypeLocal(nouveauType);
+
+    bool test = loc->UPDATE();
+
+    if (test)
+    {
+        msgBox.setText("Modification réussie.");
+
+        if (!nouvelEtat.isEmpty() && ancienEtat.toUpper() != nouvelEtat) {
+            QString nomLocal = loc->getNomLocal(ID_LOCAL);
+            notificationMessage = "Le local '" + nomLocal + "' (ID: " + QString::number(ID_LOCAL) + ") est maintenant ";
+
+            if (nouvelEtat == "DISPONIBLE") {
+                notificationMessage += "**DISPONIBLE**.";
+                bgColor = "#4caf50";
+            } else if (nouvelEtat == "EN MAINTENANCE") {
+                notificationMessage += "**EN MAINTENANCE**.";
+                bgColor = "#ff9800";
+            } else if (nouvelEtat == "Occupée") {
+                notificationMessage += "**Occupée**.";
+                bgColor = "#f44336";
+            }
+        }
+    }
+    else
+    {
+        msgBox.setText("!! La modification a échoué !!");
+    }
+
+    msgBox.exec();
+
+
+    if (!notificationMessage.isEmpty()) {
+        displayInternalNotification(notificationMessage, bgColor);
+    }
+
+
+    ui->tableLoc->setModel(loc->GETALL());
 }
 
 void MainWindow::on_SuppLoc_clicked()
 {
-    // TODO: Implement location deletion
-    QMessageBox::information(this, "À implémenter", "Fonction de suppression de local à implémenter");
+    QString idText = ui->Idsupp->text();
+
+    if (idText.isEmpty()) {
+        QMessageBox::warning(this, "Champs vide", "Veuillez entrer un ID de local à supprimer.");
+        return;
+    }
+
+    bool ok = false;
+    int ID_LOCAL = idText.toInt(&ok);
+    if (!ok || ID_LOCAL <= 0) {
+        QMessageBox::warning(this, "ID invalide", "Veuillez entrer un ID numérique valide.");
+        ui->Idsupp->clear();
+        return;
+    }
+
+    if (!loc->localExists(ID_LOCAL)) {
+        QMessageBox::warning(this, "Local non trouvé",
+                             "Local avec l'ID " + QString::number(ID_LOCAL) + " n'existe pas.\nImpossible de supprimer.");
+        ui->Idsupp->clear();
+        return;
+    }
+
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "Confirmation de Suppression",
+                                  "Êtes-vous sûr de vouloir supprimer le local ID: " + idText + " ? Les données seront archivées.",
+                                  QMessageBox::Yes | QMessageBox::No);
+
+    if (reply != QMessageBox::Yes) {
+        return;
+    }
+
+    bool archive_ok = loc->ARCHIVE_LOCAL(ID_LOCAL);
+    if (!archive_ok) {
+        QMessageBox::critical(this, "Échec d'Archivage", "L'archivage a échoué. Suppression annulée.");
+        return;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database();
+    if (!db.transaction()) {
+        QMessageBox::critical(this, "Erreur SQL", "Impossible de démarrer la transaction : " + db.lastError().text());
+        return;
+    }
+
+    bool delete_ok = loc->DELETEE(ID_LOCAL);
+    if (delete_ok) {
+        if (!db.commit()) {
+            QMessageBox::critical(this, "Erreur SQL", "La suppression n'a pas pu être commitée : " + db.lastError().text());
+            return;
+        }
+
+        QMessageBox::information(this, "Succès", "Suppression réussie. Local archivé.");
+        ui->tableLoc->setModel(loc->GETALL());
+    } else {
+        db.rollback();
+        QMessageBox::critical(this, "Échec", "La suppression a échoué malgré l'archivage.");
+    }
+
+    ui->Idsupp->clear();
 }
 
 void MainWindow::on_recherche_clicked()
 {
-    // TODO: Implement location search
+    int id = ui->rr->text().toInt();
+
+    if (id <= 0) {
+        QMessageBox::warning(this, "Erreur", "Veuillez entrer un ID valide !");
+        return;
+    }
+
+    ui->tableLoc->setModel(loc->searchById(id));
 }
 
 void MainWindow::on_ex_clicked()
 {
-    // TODO: Implement export functionality
+    QString filePath = QFileDialog::getSaveFileName(this, "Exporter PDF", "", "PDF (*.pdf)");
+    if(filePath.isEmpty()) return;
+
+    QPdfWriter pdf(filePath);
+    pdf.setPageSize(QPageSize(QPageSize::A4));
+    pdf.setResolution(300);
+
+    QPainter painter(&pdf);
+    painter.setFont(QFont("Arial", 12));
+
+    QAbstractItemModel *model = ui->tableLoc->model();
+    if (!model) {
+        QMessageBox::warning(this, "Erreur", "Aucun modèle trouvé !");
+        return;
+    }
+
+    int rowCount = model->rowCount();
+    int colCount = model->columnCount();
+
+    int y = 400;
+    int cellHeight = 150;
+
+    painter.setFont(QFont("Arial", 18, QFont::Bold));
+    painter.drawText(100, 100, "Liste des Locaux");
+    painter.setFont(QFont("Arial", 12));
+
+    int x = 150;
+    for(int col = 0; col < colCount; col++) {
+        painter.drawText(x, y, model->headerData(col, Qt::Horizontal).toString());
+        x += 400;
+    }
+
+    y += cellHeight;
+
+    for(int row = 0; row < rowCount; row++) {
+
+        if(y > 10000) {
+            pdf.newPage();
+            y = 400;
+        }
+
+        x = 150;
+
+        for(int col = 0; col < colCount; col++) {
+            QString text = model->data(model->index(row, col)).toString();
+            painter.drawText(x, y, text);
+            x += 400;
+        }
+
+        y += cellHeight;
+    }
+
+    painter.end();
+
+    QMessageBox::information(this, "Exportation", "PDF exporté avec succès !");
 }
 
 void MainWindow::on_trier_clicked()
 {
-    // TODO: Implement location sorting
+    ui->tableLoc->setModel(loc->trie());
 }
 
 void MainWindow::on_stat_clicked()
 {
-    // TODO: Implement location statistics
+    afficherStatistiques();
 }
 
 void MainWindow::on_ArchiveViewer_clicked()
 {
-    // TODO: Implement archive viewer
+    QFile file("archive_locaux.txt");
+
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        QMessageBox::critical(this, "Erreur d'Archive",
+                              "Impossible d'ouvrir le fichier d'archive 'archive_locaux.txt'.");
+        return;
+    }
+
+    QWidget *archiveWindow = new QWidget(this, Qt::Window);
+    archiveWindow->setWindowTitle("Historique des Locaux Supprimés");
+    archiveWindow->setMinimumSize(700, 400);
+
+    QVBoxLayout *layout = new QVBoxLayout(archiveWindow);
+
+    QLabel *title = new QLabel("Liste des locaux archivés. Double-cliquez pour voir les détails complets :");
+    title->setStyleSheet("font-weight: bold; font-size: 14px; margin-bottom: 10px;");
+    layout->addWidget(title, 0, Qt::AlignCenter);
+
+    QListWidget *listWidget = new QListWidget(archiveWindow);
+    layout->addWidget(listWidget);
+
+    QTextStream in(&file);
+
+    while (!in.atEnd())
+    {
+        QString fullLine = in.readLine().trimmed();
+        if (fullLine.isEmpty()) continue;
+
+        QString summaryLine = fullLine;
+        int endOfSummary = fullLine.indexOf("| ETAT:");
+        if (endOfSummary != -1) {
+            summaryLine = fullLine.left(endOfSummary);
+        }
+
+        QListWidgetItem *item = new QListWidgetItem(summaryLine, listWidget);
+
+        item->setData(Qt::UserRole, fullLine);
+    }
+    file.close();
+
+    connect(listWidget, &QListWidget::itemActivated, this, &MainWindow::on_archiveItem_selected);
+
+    archiveWindow->show();
 }
 
 void MainWindow::on_archiveItem_selected(QListWidgetItem *item)
 {
-    // TODO: Implement archive item selection
-    Q_UNUSED(item);
+    QString fullLine = item->data(Qt::UserRole).toString();
+
+    if (fullLine.isEmpty()) {
+        QMessageBox::warning(this, "Erreur", "Données d'archive introuvables pour cet élément.");
+        return;
+    }
+
+    auto extract = [&](QString start, QString end = QString()) {
+        int s = fullLine.indexOf(start);
+        if (s == -1) return QString();
+        s += start.length();
+
+        int e = (end.isEmpty()) ? fullLine.length() : fullLine.indexOf(end, s);
+        if (e == -1) e = fullLine.length();
+
+        return fullLine.mid(s, e - s).trimmed();
+    };
+
+    QString id_str = extract("ID:", "| NOM:");
+    QString NOM_LOCAL = extract("NOM:", "| ETAT:");
+    QString ETAT_LOCAL = extract("ETAT:", "| TYPE:");
+    QString TYPE_LOCAL = extract("TYPE:");
+
+    int ID_LOCAL = id_str.toInt();
+
+    QString details = QString(
+                          "Voulez-vous réajouter ce local ?\n\n"
+                          "ID : %1\nNom : %2\nÉtat : %3\nType : %4")
+                          .arg(id_str, NOM_LOCAL, ETAT_LOCAL, TYPE_LOCAL);
+
+    if (QMessageBox::question(this, "Restaurer", details) != QMessageBox::Yes)
+        return;
+
+    bool ok = true;
+    int original = ID_LOCAL;
+
+    while (loc->localExists(ID_LOCAL))
+    {
+        int newID = QInputDialog::getInt(this, "ID déjà utilisé",
+                                         QString("L'ID %1 est déjà utilisé.\nEntrez un ID unique :").arg(ID_LOCAL),
+                                         ID_LOCAL, 1, 999999, 1, &ok);
+        if (!ok) return;
+        ID_LOCAL = newID;
+    }
+
+    loc->setIdLocal(ID_LOCAL);
+    loc->setNomLocal(NOM_LOCAL);
+    loc->setEtatLocal(ETAT_LOCAL);
+    loc->setTypeLocal(TYPE_LOCAL);
+
+    if (loc->ADD())
+    {
+        QMessageBox::information(this, "Succès", "Local restauré !");
+        displayInternalNotification("Local restauré !");
+
+        ui->tableLoc->setModel(loc->GETALL());
+
+        QListWidget *list = item->listWidget();
+        int row = list->row(item);
+        delete list->takeItem(row);
+
+    }
+    else
+    {
+        QMessageBox::critical(this, "Erreur", "Échec du réajout.");
+    }
 }
 
 void MainWindow::on_btnArchiveViewer_clicked()
 {
-    // TODO: Implement archive viewer button
+    on_ArchiveViewer_clicked();
 }
 
 void MainWindow::onEtatChanged(const QString &newEtat)
 {
-    // TODO: Implement state change handling
-    Q_UNUSED(newEtat);
+    QString message = "L'état du local a été modifié : " + newEtat;
+    showNotification(message);
 }
 
 void MainWindow::on_ASC_clicked()
 {
-    // TODO: Implement ascending sort
+    QString currentCriteria = ui->tt->currentText();
+    qDebug() << "Critère de tri : " << currentCriteria;
+
+    if(currentCriteria != "Choisir") {
+        QSqlQueryModel* modeleTriee = loc->trie("ASC", currentCriteria);
+        qDebug() << "Nombre de lignes dans le modèle trié : " << modeleTriee->rowCount();
+        ui->tableLoc->setModel(modeleTriee);
+    } else {
+        QSqlQueryModel* modeleNonTrie = loc->GETALL();
+        qDebug() << "Nombre de lignes dans le modèle non trié : " << modeleNonTrie->rowCount();
+        ui->tableLoc->setModel(modeleNonTrie);
+    }
 }
 
 void MainWindow::on_DESC_clicked()
 {
-    // TODO: Implement descending sort
+    QString currentCriteria = ui->tt->currentText();
+    qDebug() << "Critère de tri : " << currentCriteria;
+
+    if(currentCriteria != "Choisir") {
+        QSqlQueryModel* modeleTriee = loc->trie("DESC", currentCriteria);
+        qDebug() << "Nombre de lignes dans le modèle trié : " << modeleTriee->rowCount();
+        ui->tableLoc->setModel(modeleTriee);
+    } else {
+        QSqlQueryModel* modeleNonTrie = loc->GETALL();
+        qDebug() << "Nombre de lignes dans le modèle non trié : " << modeleNonTrie->rowCount();
+        ui->tableLoc->setModel(modeleNonTrie);
+    }
 }
 
 // ==========================================
@@ -1954,91 +2808,357 @@ void MainWindow::on_DESC_clicked()
 
 void MainWindow::chargerActivites()
 {
-    // TODO: Implement activities loading
+    ui->tabA->clearContents();
+    ui->tabA->setRowCount(0);
+
+    Activite ac;
+    QVector<QStringList> data = ac.getListeActivites(db);
+
+    for (int row = 0; row < data.size(); row++) {
+        ui->tabA->insertRow(row);
+
+        for (int col = 0; col < data[row].size(); col++) {
+            QTableWidgetItem *item = new QTableWidgetItem(data[row][col]);
+            item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+            ui->tabA->setItem(row, col, item);
+        }
+    }
 }
 
 Activite MainWindow::getActiviteFromInputs()
 {
-    // TODO: Implement getting activity from inputs
-    return Activite();
+    Activite a;
+    a.setId(ui->IDA1->text().toInt());
+    a.setNom(ui->nomA1->text());
+    a.setType(ui->typeA1->currentText());
+    a.setDuree(ui->dureeA1->time().toString("HH:mm"));
+    a.setHoraire(ui->horaireA1->dateTime());
+
+    a.setCoach(ui->coachA1->currentText().toInt());
+
+
+    a.setLocal_A(ui->local_AA1->text().toInt());
+    a.setNbp(ui->npA1->value());
+    a.setStatus(ui->statusA1->currentText());
+    return a;
 }
 
 void MainWindow::clearAjouterAInputs()
 {
-    // TODO: Implement clearing activity inputs
+    ui->IDA1->clear();
+    ui->nomA1->clear();
+    ui->typeA1->setCurrentIndex(0);
+    ui->dureeA1->setTime(QTime(0, 0));
+    ui->horaireA1->setDateTime(QDateTime::currentDateTime());
+    ui->coachA1->clear();
+    ui->local_AA1->clear();
+    ui->npA1->setValue(0);
+    ui->statusA1->setCurrentIndex(0);
 }
 
 void MainWindow::remplirModifierA(const Activite &a)
 {
-    // TODO: Implement filling modification form
-    Q_UNUSED(a);
+    ui->idm->setText(QString::number(a.getId()));
+    ui->nomm->setText(a.getNom());
+    ui->typem->setCurrentText(a.getType());
+    QDateTime h = a.getHoraire();
+    h.setTimeSpec(Qt::UTC);
+    h = h.toLocalTime();
+    ui->horairem->setDateTime(h);
+
+    ui->dureem->setTime(QTime::fromString(a.getDuree(), "HH:mm"));
+    ui->coachm->setText(QString::number(a.getCoach()));
+    ui->local_Am->setText(QString::number(a.getlocal_A()));
+    ui->statusm->setCurrentText(a.getStatus());
+    ui->npam->setValue(a.getNbp());
 }
 
 void MainWindow::setAfficherAEditable(bool editable)
 {
-    // TODO: Implement setting display editable
-    Q_UNUSED(editable);
+    ui->ida->setEnabled(editable);
+    ui->noma->setEnabled(editable);
+    ui->typea->setEnabled(editable);
+    ui->horairea->setEnabled(editable);
+    ui->dureea->setEnabled(editable);
+    ui->coacha->setEnabled(editable);
+    ui->local_Aa->setEnabled(editable);
+    ui->statuta->setEnabled(editable);
+    ui->npa->setEnabled(editable);
 }
 
 void MainWindow::remplirAfficherA(const Activite &a)
 {
-    // TODO: Implement filling display form
-    Q_UNUSED(a);
+    ui->ida->setText(QString::number(a.getId()));
+    ui->noma->setText(a.getNom());
+    ui->typea->setCurrentText(a.getType());
+    QDateTime h = a.getHoraire();
+    h.setTimeSpec(Qt::UTC);
+    h = h.toLocalTime();
+    ui->horairea->setDateTime(h);
+
+    ui->dureea->setTime(QTime::fromString(a.getDuree(), "HH:mm"));
+    ui->coacha->setText(QString::number(a.getCoach()));
+    ui->local_Aa->setText(QString::number(a.getlocal_A()));
+    ui->statuta->setCurrentText(a.getStatus());
+    ui->npa->setValue(a.getNbp());
 }
 
 void MainWindow::colorerJoursAvecActivites()
 {
-    // TODO: Implement coloring calendar days with activities
+    highlighterJoursActivites();
 }
 
 Adherent MainWindow::getAdherentFromInputs()
 {
-    // TODO: Implement getting adherent from inputs
-    return Adherent();
+    Adherent a;
+    a.setId(ui->id_a1->text().toInt());
+    a.setNom(ui->nom_a1->text());
+    a.setPrenom(ui->prenom_a1->text());
+    a.setGenre(ui->genre_a1->isChecked() ? "Homme" : "Femme");
+    a.setDateNaissance(ui->date_a1->date().toString("MM/dd/yyyy"));
+    a.setCin(ui->cin_a1->text().toInt());
+    a.setAdresse(ui->adresse_a1->text());
+    a.setGsm(ui->gsm_a1->text());
+    a.setEmail(ui->mail_a1->text());
+    return a;
 }
 
 void MainWindow::clearAdherentInputs()
 {
-    // TODO: Implement clearing adherent inputs
+    ui->id_a1->clear();
+    ui->nom_a1->clear();
+    ui->prenom_a1->clear();
+    ui->genre_a1->setAutoExclusive(false); ui->genre_a1->setChecked(false); ui->genre_a1->setAutoExclusive(true);
+    ui->genre_a2->setAutoExclusive(false); ui->genre_a2->setChecked(false); ui->genre_a2->setAutoExclusive(true);
+    ui->date_a1->clear();
+    ui->cin_a1->clear();
+    ui->adresse_a1->clear();
+    ui->gsm_a1->clear();
+    ui->mail_a1->clear();
 }
 
 void MainWindow::chargerTableAdherents()
 {
-    // TODO: Implement loading adherents table
+    ui->table_aherent->clearContents();
+    ui->table_aherent->setRowCount(0);
+
+    QSqlQuery query(db);
+    if(query.exec("SELECT * FROM ADHERENT ORDER BY ID_ADHERENT")) {
+        int row = 0;
+        while (query.next()) {
+            ui->table_aherent->insertRow(row);
+            ui->table_aherent->setItem(row, 0, new QTableWidgetItem(query.value("ID_ADHERENT").toString()));
+            ui->table_aherent->setItem(row, 1, new QTableWidgetItem(query.value("NOM_ADHERENT").toString()));
+            ui->table_aherent->setItem(row, 2, new QTableWidgetItem(query.value("PRENOM_ADHERENT").toString()));
+            ui->table_aherent->setItem(row, 3, new QTableWidgetItem(query.value("DATE_DE_NAISSANCE_ADHERENT").toString()));
+            ui->table_aherent->setItem(row, 4, new QTableWidgetItem(query.value("GENRE_ADHERENT").toString()));
+            ui->table_aherent->setItem(row, 5, new QTableWidgetItem(query.value("CIN_ADHERENT").toString()));
+            ui->table_aherent->setItem(row, 6, new QTableWidgetItem(query.value("ADRESSE_ADHERENT").toString()));
+            ui->table_aherent->setItem(row, 7, new QTableWidgetItem(query.value("GSM_ADHERENT").toString()));
+            ui->table_aherent->setItem(row, 8, new QTableWidgetItem(query.value("EMAIL_ADHERENT").toString()));
+            row++;
+        }
+    } else {
+        QMessageBox::warning(this, "Erreur", "Impossible de charger les adhérents : " + query.lastError().text());
+    }
 }
 
 void MainWindow::afficherStatistiques()
 {
-    // TODO: Implement statistics display
+    QSqlQuery query;
+    query.prepare("SELECT ETAT_LOCAL, COUNT(*) FROM LOCAL GROUP BY ETAT_LOCAL");
+
+    if (!query.exec()) {
+        QMessageBox::critical(this, "Erreur SQL", "Impossible de charger les statistiques: " + query.lastError().text());
+        return;
+    }
+
+    QMap<QString, int> statsData;
+    while (query.next()) {
+        QString etat = query.value(0).toString().trimmed().toLower();
+        int count = query.value(1).toInt();
+        statsData[etat] = count;
+    }
+
+    if (statsData.isEmpty()) {
+        QMessageBox::information(this, "Statistiques", "Aucune donnée de local trouvée pour générer le graphique.");
+        return;
+    }
+
+
+    QWidget *statWindow = new QWidget(this, Qt::Window);
+    statWindow->setWindowTitle("Statistiques des Locaux par État");
+    statWindow->setMinimumSize(500, 400);
+
+    class PieChartWidget : public QWidget {
+    public:
+        PieChartWidget(const QMap<QString, int> &data, QWidget *parent = nullptr)
+            : QWidget(parent), statsData(data) {}
+
+    protected:
+        void paintEvent(QPaintEvent *) override {
+            if (statsData.isEmpty()) return;
+
+            QPainter painter(this);
+            painter.setRenderHint(QPainter::Antialiasing);
+
+            QRectF pieRect(10, 10, width() - 120, height() - 20);
+            int startAngle = 0;
+            QVector<QColor> colors = {
+                QColor("#4caf50"), QColor("#2196f3"), QColor("#ff9800"), QColor("#f44336"),
+                QColor("#9c27b0"), QColor("#00bcd4"), QColor("#ffc107"), QColor("#795548")
+            };
+
+            int colorIndex = 0;
+            int total = 0;
+            for (auto v : statsData) total += v;
+
+            for (auto it = statsData.constBegin(); it != statsData.constEnd(); ++it)
+            {
+                if (total == 0) continue;
+                qreal percentage = (qreal)it.value() * 360.0 / total;
+                painter.setBrush(colors[colorIndex % colors.size()]);
+                painter.drawPie(pieRect, startAngle * 16, percentage * 16);
+                startAngle += percentage;
+                colorIndex++;
+            }
+
+            colorIndex = 0;
+            int yOffset = 20;
+            for (auto it = statsData.constBegin(); it != statsData.constEnd(); ++it)
+            {
+                QString label = QString("%1: %2 (%3%)")
+                .arg(it.key())
+                    .arg(it.value())
+                    .arg((qreal)it.value() * 100.0 / total, 0, 'f', 1);
+
+                painter.setPen(Qt::white);
+                painter.setBrush(colors[colorIndex % colors.size()]);
+                painter.drawRect(width() - 150, yOffset, 10, 10);
+                painter.drawText(width() - 135, yOffset + 9, label);
+
+                yOffset += 20;
+                colorIndex++;
+            }
+        }
+    private:
+        QMap<QString, int> statsData;
+    };
+
+    PieChartWidget *chartWidget = new PieChartWidget(statsData);
+    chartWidget->setMinimumSize(450, 350);
+
+
+    QVBoxLayout *layout = new QVBoxLayout(statWindow);
+    QLabel *title = new QLabel("Répartition des locaux par État (Diagramme Circulaire)");
+    title->setStyleSheet("font-weight: bold; font-size: 16px; margin-bottom: 10px;");
+
+    layout->addWidget(title, 0, Qt::AlignCenter);
+    layout->addWidget(chartWidget);
+
+    statWindow->show();
 }
 
 void MainWindow::displayInternalNotification(const QString &message, const QString &bgColor)
 {
-    // TODO: Implement internal notification display
-    Q_UNUSED(message);
-    Q_UNUSED(bgColor);
+    QLabel *toast = new QLabel(message, this);
+    toast->setStyleSheet(
+        QString("background-color: %1; color: white; padding: 15px; border-radius: 10px; "
+                "font-weight: bold; font-size: 16px; text-align: center;").arg(bgColor)
+        );
+    toast->setAlignment(Qt::AlignCenter);
+    toast->setWindowFlag(Qt::FramelessWindowHint);
+    toast->setAttribute(Qt::WA_TranslucentBackground);
+    toast->setAttribute(Qt::WA_ShowWithoutActivating);
+
+    toast->adjustSize();
+    int x = (width() - toast->width()) / 2;
+    int y = height() - toast->height() - 50;
+    toast->move(x, y);
+    toast->show();
+
+    QPropertyAnimation *fadeIn = new QPropertyAnimation(toast, "windowOpacity");
+    fadeIn->setDuration(300);
+    fadeIn->setStartValue(0.0);
+    fadeIn->setEndValue(1.0);
+    fadeIn->start(QAbstractAnimation::DeleteWhenStopped);
+
+
+    QTimer::singleShot(5000, this, [toast]() {
+        QPropertyAnimation *fadeOut = new QPropertyAnimation(toast, "windowOpacity");
+        fadeOut->setDuration(400);
+        fadeOut->setStartValue(1.0);
+        fadeOut->setEndValue(0.0);
+        QObject::connect(fadeOut, &QPropertyAnimation::finished, toast, &QObject::deleteLater);
+        fadeOut->start(QAbstractAnimation::DeleteWhenStopped);
+    });
 }
 
 void MainWindow::showNotification(const QString &message)
 {
-    // TODO: Implement notification display
-    Q_UNUSED(message);
+    QMessageBox::information(this, "Notification", message);
 }
 
 void MainWindow::saveAllStatesToFile()
 {
-    // TODO: Implement saving states to file
+    QFile file("last_states.txt");
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        QTextStream out(&file);
+
+        QSqlQuery query("SELECT ID_LOCAL, ETAT_LOCAL FROM LOCAL");
+        while (query.next())
+        {
+            int id = query.value(0).toInt();
+            QString etat = query.value(1).toString();
+            out << id << "|" << etat << "\n";
+        }
+        file.close();
+    }
 }
 
 QMap<int, QString> MainWindow::readLastStatesFromFile()
 {
-    // TODO: Implement reading states from file
-    return QMap<int, QString>();
+    QMap<int, QString> lastStates;
+    QFile file("last_states.txt");
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        QTextStream in(&file);
+        while (!in.atEnd())
+        {
+            QString line = in.readLine().trimmed();
+            if (line.isEmpty()) continue;
+            QStringList parts = line.split("|");
+            if (parts.size() == 2)
+            {
+                int id = parts[0].toInt();
+                QString etat = parts[1];
+                lastStates[id] = etat;
+            }
+        }
+        file.close();
+    }
+    return lastStates;
 }
 
 void MainWindow::checkStatesOnStartup()
 {
-    // TODO: Implement checking states on startup
+    QMap<int, QString> lastStates = readLastStatesFromFile();
+
+    QSqlQuery query("SELECT ID_LOCAL, ETAT_LOCAL FROM LOCAL");
+    while (query.next())
+    {
+        int id = query.value(0).toInt();
+        QString currentEtat = query.value(1).toString();
+
+        if (lastStates.contains(id) && lastStates[id] != currentEtat)
+        {
+            QString message = QString("Le local ID %1 a changé d'état : %2").arg(id).arg(currentEtat);
+            displayInternalNotification(message);
+        }
+    }
+
+    saveAllStatesToFile();
 }
 
 /* =========================================================================
