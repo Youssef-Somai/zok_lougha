@@ -2,38 +2,15 @@
 #include <QDebug>
 #include <cstring>
 
-// NOTE: The quirc library is not included in this project.
-// To enable QR code scanning, you need to:
-// 1. Download quirc from: https://github.com/dlbeer/quirc
-// 2. Add quirc source files to your project
-// 3. Uncomment the quirc implementation below
-
-/*
 extern "C" {
 #include "quirc.h"
 }
-*/
 
 QString QRDecoder::decode(const QImage &image)
 {
     if (image.isNull()) {
         return QString();
     }
-
-    // STUB IMPLEMENTATION: quirc library not available
-    // This is a placeholder until the quirc library is added to the project
-    // Only warn once to avoid console spam
-    static bool warnedOnce = false;
-    if (!warnedOnce) {
-        qWarning() << "⚠ QR Code decoding is disabled: quirc library not available";
-        qWarning() << "   To enable QR scanning, add the quirc library to your project";
-        qWarning() << "   Download from: https://github.com/dlbeer/quirc";
-        warnedOnce = true;
-    }
-
-    return QString(); // Return empty string until quirc is added
-
-    /* ORIGINAL IMPLEMENTATION (requires quirc library):
 
     // Convert image to grayscale if needed
     QImage grayImage = image.convertToFormat(QImage::Format_Grayscale8);
@@ -92,7 +69,6 @@ QString QRDecoder::decode(const QImage &image)
 
     quirc_destroy(qr);
     return result;
-    */
 }
 
 bool QRDecoder::hasQRCode(const QImage &image)

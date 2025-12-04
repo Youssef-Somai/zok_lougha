@@ -38,7 +38,11 @@ int main(int argc, char *argv[])
                 << QDir::currentPath() + "/config.ini"  // Dossier de travail
                 << QDir::currentPath() + "/../config.ini"  // Dossier parent
                 << QDir::currentPath() + "/../../config.ini"  // Deux niveaux au-dessus
-                << QDir::currentPath() + "/../../../config.ini";  // Trois niveaux au-dessus
+                << QDir::currentPath() + "/../../../config.ini"  // Trois niveaux au-dessus
+                << QDir::currentPath() + "/../../../../config.ini"  // Quatre niveaux
+                << QDir::currentPath() + "/../../../../../config.ini"  // Cinq niveaux
+                << QDir::currentPath() + "/../../../../../../config.ini"  // Six niveaux
+                << QDir::currentPath() + "/../../../../../test/zok_lougha/config.ini";  // Source directory
 
     QString configPath;
     for (const QString &path : searchPaths) {

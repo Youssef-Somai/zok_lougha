@@ -8,6 +8,8 @@ SOURCES += \
     adherent.cpp \
     aiverifier.cpp \
     connexion.cpp \
+    decode.c \
+    identify.c \
     imagehandler.cpp \
     local.cpp \
     main.cpp \
@@ -17,7 +19,9 @@ SOURCES += \
     qrcodehelper.cpp \
     qrdecoder.cpp \
     qrscannerdialog.cpp \
-    smtp.cpp
+    quirc.c \
+    smtp.cpp \
+    version_db.c
 
 HEADERS += \
     activite.h \
@@ -32,6 +36,8 @@ HEADERS += \
     qrcodehelper.h \
     qrdecoder.h \
     qrscannerdialog.h \
+    quirc.h \
+    quirc_internal.h \
     smtp.h
 
 FORMS += \
