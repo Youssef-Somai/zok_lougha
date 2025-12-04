@@ -57,7 +57,7 @@
 #include "local.h"
 #include "smtp.h"
 
-QT_CHARTS_USE_NAMESPACE
+using namespace QtCharts;
 
 /* =========================
  *  CONSTRUCTEUR / DTOR

@@ -12,6 +12,8 @@
 #include <QtCharts/QChartGlobal>
 #include <QtCharts/QChartView>
 
+namespace QtCharts { class QChartView; }
+
 #include "activite.h"
 #include "connexion.h"
 #include "adherent.h"
