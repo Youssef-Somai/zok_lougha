@@ -8,16 +8,9 @@ CONFIG += c++17
 # Include paths for organized structure
 INCLUDEPATH += header
 INCLUDEPATH += quirc
+INCLUDEPATH += .
 
-# Source files from main branch
-SOURCES += \
-    activite.cpp \
-    adherent.cpp \
-    connexion.cpp \
-    local.cpp \
-    smtp.cpp
-
-# Source files from Materiel branch
+# Source files - Materiel branch structure (UNIFIED)
 SOURCES += \
     quirc/quirc.c \
     quirc/decode.c \
@@ -35,15 +28,15 @@ SOURCES += \
     source/qrscannerdialog.cpp \
     source/qrdecoder.cpp
 
-# Headers from main branch
-HEADERS += \
-    activite.h \
-    adherent.h \
-    connexion.h \
-    local.h \
-    smtp.h
+# Source files from main branch - Business logic classes
+SOURCES += \
+    activite.cpp \
+    adherent.cpp \
+    connexion.cpp \
+    local.cpp \
+    smtp.cpp
 
-# Headers from Materiel branch
+# Headers - Materiel branch structure (UNIFIED)
 HEADERS += \
     header/connection.h \
     header/mainwindow.h \
@@ -55,6 +48,14 @@ HEADERS += \
     header/qrcodehelper.h \
     header/qrscannerdialog.h \
     header/qrdecoder.h
+
+# Headers from main branch - Business logic classes
+HEADERS += \
+    activite.h \
+    adherent.h \
+    connexion.h \
+    local.h \
+    smtp.h
 
 FORMS += \
     mainwindow.ui

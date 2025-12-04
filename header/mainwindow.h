@@ -9,8 +9,20 @@
 #include <QtCharts/QChartView>
 #include <QtCharts/QPieSeries>
 #include <QtCharts/QPieSlice>
+#include <QtSql>
+#include <QCalendarWidget>
+#include <QTextCharFormat>
+#include <QListWidget>
+#include <QListWidgetItem>
+#include <QInputDialog>
 #include "imagehandler.h"
 #include "aiverifier.h"
+
+// Forward declarations for classes from main branch
+class Activite;
+class Connexion;
+class Adherent;
+class local;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -75,6 +87,74 @@ private slots:
     // === PDF EXPORT ===
     void on_pb_export_pdf_clicked();
 
+    // ==========================================
+    // === SLOTS FROM MAIN BRANCH (Activities, Adherents, Locations) ===
+    // ==========================================
+
+    // CRUD Activités
+    void on_bajouterA_clicked();
+    void on_bannulerA_clicked();
+    void on_b_A_supprimer_clicked();
+    void on_b_A_modifier_clicked();
+    void on_ok_modif_A_clicked();
+    void on_annuler_modif_A_clicked();
+    void on_b_A_afficher_clicked();
+    void on_ok_aff_A_clicked();
+
+    // Calendrier
+    void afficherCalendrier();
+    void afficherActivitesDuJour(const QDate &date);
+    void afficherToutesActivitesDansTabA2();
+    void on_B_A_retour_2_clicked();
+
+    // Tri et recherche
+    void on_Btrier_clicked();
+    void on_Bchercher_clicked();
+
+    // Statistiques activités
+    void afficher_stat_act();
+    void on_B_retour_stat_act_clicked();
+    void on_Bexporter_clicked();
+    void on_afficher_regroupement_clicked();
+    void on_B_retour_stat_act_2_clicked();
+    void chargerSuggestionCoach();
+    void highlighterJoursActivites();
+
+    // Navigation supplémentaire
+    void on_B_A_retour_clicked();
+    void on_B_A_retour_5_clicked();
+    void on_B_A_retour_6_clicked();
+    void on_bt_retour_accueil_clicked();
+
+    // Adhérents
+    void on_valider_a_clicked();
+    void on_annuler_a_clicked();
+    void on_supprimer_a_clicked();
+    void on_modifier_a_clicked();
+    void on_afficher_adherent_clicked();
+    void on_modifier_a_3_clicked();
+    void on_PDF_a_clicked();
+    void on_statistics_clicked();
+    void on_filtrer_a_clicked();
+    void on_look_clicked();
+
+    // Local
+    void on_AjouterLoc_clicked();
+    bool controlSaisie();
+    void on_tableLoc_activated(const QModelIndex &index);
+    void on_ModifLoc_clicked();
+    void on_SuppLoc_clicked();
+    void on_recherche_clicked();
+    void on_ex_clicked();
+    void on_trier_clicked();
+    void on_stat_clicked();
+    void on_ArchiveViewer_clicked();
+    void on_archiveItem_selected(QListWidgetItem *item);
+    void on_btnArchiveViewer_clicked();
+    void onEtatChanged(const QString &newEtat);
+    void on_ASC_clicked();
+    void on_DESC_clicked();
+
 private:
     Ui::MainWindow *ui;
 
@@ -124,6 +204,41 @@ private:
     Qt::SortOrder currentSortOrder; // Current sort order
     void sortTableByColumn(int column, Qt::SortOrder order);
 
+    // ==========================================
+    // === PRIVATE METHODS AND VARIABLES FROM MAIN BRANCH ===
+    // ==========================================
+
+    // Database connection
+    Connexion *connexion;
+    QSqlDatabase db;
+
+    // Local object
+    local *loc;
+
+    // Activité methods
+    void chargerActivites();
+    Activite getActiviteFromInputs();
+    void clearAjouterAInputs();
+    void remplirModifierA(const Activite &a);
+    void setAfficherAEditable(bool editable);
+    void remplirAfficherA(const Activite &a);
+    void colorerJoursAvecActivites();
+
+    // Adhérent methods
+    Adherent getAdherentFromInputs();
+    void clearAdherentInputs();
+    void chargerTableAdherents();
+
+    // Statistics
+    void afficherStatistiques();
+
+    // Notifications
+    void displayInternalNotification(const QString &message,
+                                     const QString &bgColor = "#4caf50");
+    void showNotification(const QString &message);
+    void saveAllStatesToFile();
+    QMap<int, QString> readLastStatesFromFile();
+    void checkStatesOnStartup();
 
 };
 
